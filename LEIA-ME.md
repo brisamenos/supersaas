@@ -90,7 +90,7 @@ Importante:
 - **Senhas geradas aparecem uma única vez** na tela. Copie e entregue ao cliente (ou deixe a central enviar por WhatsApp).
 - A central confere os sistemas a cada **30 segundos**. Se um sistema falhar duas vezes seguidas, ele aparece "Fora do ar" e você recebe um aviso no WhatsApp (e outro quando voltar).
 - Renovar pela central **lança o pagamento no financeiro** (você pode desmarcar) e pode avisar o cliente.
-- O faturamento "previsto" é a soma da mensalidade de quem está pagando. O "recebido" é o que foi lançado no financeiro.
+- O faturamento "previsto" (receita mensal, a receber) soma **só os clientes ativos com a mensalidade em dia**. Bloqueados, vencidos e quem está sem data de vencimento ficam de fora; voltam a contar quando forem renovados ou reativados. O "recebido" é o que foi lançado no financeiro.
 - Faça backup do volume `/app/data` da central de vez em quando.
 
 ## Variáveis opcionais da central

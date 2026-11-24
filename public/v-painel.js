@@ -18,10 +18,10 @@
       <div class="pulse-name"><span class="swatch" style="background:${App.sysColor(s.kind)}"></span><div style="min-width:0"><b>${s.name}</b><small>${F.int(s.clients)} ${word}${s.clients === 1 ? '' : 's'}${s.vencido ? html` • <span style="color:var(--bad)">${s.vencido} vencido${s.vencido === 1 ? '' : 's'}</span>` : ''}</small></div></div>
       <div class="beat-cell">${beat(s)}</div>
       <div class="pulse-state">${App.sysBadge(s.status)}<div class="small muted" style="margin-top:3px;max-width:230px">${detail}</div></div>
-      <div class="pulse-cell hide-sm"><b>${F.int(s.active)}</b>pagando</div>
+      <div class="pulse-cell hide-sm"><b>${F.int(s.active)}</b>em dia</div>
       <div class="pulse-cell hide-sm"><b>${F.int(s.activity_today)}</b>${s.unit} hoje</div>
       <div class="pulse-cell hide-sm hide-md"><b>${F.brl0(s.volume_today)}</b>movimentado hoje</div>
-      <div class="pulse-line small muted">${F.int(s.active)} pagando • ${F.int(s.activity_today)} ${s.unit} hoje • ${F.brl0(s.volume_today)}</div>
+      <div class="pulse-line small muted">${F.int(s.active)} em dia • ${F.int(s.activity_today)} ${s.unit} hoje • ${F.brl0(s.volume_today)}</div>
     </div>`;
   }
 
@@ -58,7 +58,7 @@
         </section>
         <section class="panel strip" aria-label="Números do negócio">
           <div><div class="kpi-label">Receita mensal (MRR)</div><div class="kpi-value">${F.brl0(k.mrr)}</div><div class="kpi-note">${F.brl0(k.arr)} por ano</div></div>
-          <div><div class="kpi-label">Clientes pagando</div><div class="kpi-value">${F.int(k.payers)}</div><div class="kpi-note">de ${F.int(k.clients_total)} cadastrados • ticket ${F.brl0(k.ticket)}</div></div>
+          <div><div class="kpi-label">Clientes em dia</div><div class="kpi-value">${F.int(k.payers)}</div><div class="kpi-note">de ${F.int(k.clients_total)} cadastrados • ticket ${F.brl0(k.ticket)}</div></div>
           <div><div class="kpi-label">Vencidos</div><div class="kpi-value" style="${k.vencido ? 'color:var(--bad)' : ''}">${F.int(k.vencido)}</div><div class="kpi-note ${k.vencido ? 'bad' : ''}">${k.vencido ? F.brl0(k.mrr_risk) + ' por mês parados' : 'nenhum atraso'}</div></div>
           <div><div class="kpi-label">Vencem em 7 dias</div><div class="kpi-value">${F.int(k.vencendo)}</div><div class="kpi-note">${k.new_30d} novo${k.new_30d === 1 ? '' : 's'} nos últimos 30 dias</div></div>
           <div><div class="kpi-label">Movimento hoje</div><div class="kpi-value">${F.int(k.activity_today)}</div><div class="kpi-note">${F.brl0(k.volume_today)} movimentados</div></div>

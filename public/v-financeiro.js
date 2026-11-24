@@ -35,7 +35,7 @@
           <div class="row"><button class="btn" data-act="fin-export">${icon('download')}Baixar planilha</button><button class="btn btn-primary admin-only" data-act="ledger-new">${icon('plus')}Novo lançamento</button></div>
         </div>
         <section class="panel strip" aria-label="Resumo do mês">
-          <div><div class="kpi-label">Receita mensal prevista</div><div class="kpi-value">${F.brl0(d.mrr)}</div><div class="kpi-note">${d.payers} clientes pagando • ticket ${F.brl0(d.ticket)}</div></div>
+          <div><div class="kpi-label">Receita mensal prevista</div><div class="kpi-value">${F.brl0(d.mrr)}</div><div class="kpi-note">${d.payers} clientes em dia • ticket ${F.brl0(d.ticket)}</div></div>
           <div><div class="kpi-label">Recebido no mês</div><div class="kpi-value">${F.brl0(d.received)}</div><div class="kpi-note ${d.expected_gap > 0 ? '' : 'good'}">${d.expected_gap > 0 ? 'faltam ' + F.brl0(d.expected_gap) + ' do previsto' : 'meta do mês atingida'}</div></div>
           <div><div class="kpi-label">Despesas</div><div class="kpi-value">${F.brl0(d.expenses)}</div><div class="kpi-note">no mês</div></div>
           <div><div class="kpi-label">Lucro</div><div class="kpi-value" style="${d.profit < 0 ? 'color:var(--bad)' : ''}">${F.brl0(d.profit)}</div><div class="kpi-note ${d.profit < 0 ? 'bad' : ''}">${d.profit < 0 ? 'no vermelho' : 'recebido − despesas'}</div></div>
@@ -44,7 +44,7 @@
         <div class="grid g2">
           <section class="panel"><div class="panel-head"><h2>Entradas e saídas, mês a mês</h2><span class="hint">últimos 6 meses</span></div><div class="panel-body"><div id="chMonthly"></div></div></section>
           <section class="panel"><div class="panel-head"><h2>Por sistema</h2></div><div class="panel-body">
-            ${d.by_system.length ? html`<table class="data-table"><thead><tr><th>Sistema</th><th class="num">Pagando</th><th class="num">Mensal</th><th class="num">Atrasados</th></tr></thead><tbody>
+            ${d.by_system.length ? html`<table class="data-table"><thead><tr><th>Sistema</th><th class="num">Em dia</th><th class="num">Mensal</th><th class="num">Atrasados</th></tr></thead><tbody>
               ${d.by_system.map(s => html`<tr><td>${s.name}</td><td class="num">${s.clients}</td><td class="num">${F.brl0(s.mrr)}</td><td class="num" style="${s.late ? 'color:var(--bad);font-weight:600' : ''}">${s.late}</td></tr>`)}</tbody></table>` : html`<p class="muted small">Conecte um sistema para ver a divisão.</p>`}
             <h3 style="font:600 15px var(--f-body);margin:22px 0 6px">Despesas por categoria</h3><div id="chCats"></div>
           </div></section>
