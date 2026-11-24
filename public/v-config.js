@@ -9,7 +9,7 @@
     title: 'Configurações',
     async render() {
       const [st, us, msg, au] = await Promise.all([App.get('/settings'), App.get('/users'), App.get('/messages'), App.get('/audit')]);
-      const w = st.wuzapi;
+      const w = st.wuzapi, a = st.assistant;
       App.render(html`
         <div class="grid g2e" style="margin-top:8px">
           <section class="panel"><div class="panel-head"><h2>WhatsApp (WuzAPI)</h2>${w.ready ? html`<span class="badge good">${icon('check')}Ligado${w.instance_name ? ' • ' + w.instance_name : ''}</span>` : html`<span class="badge warn">${icon('alert')}Falta ligar</span>`}</div><div class="panel-body">
@@ -26,6 +26,22 @@
               <p class="form-error" role="alert" hidden></p>
               <div class="row"><button class="btn btn-primary admin-only" type="submit">Salvar números</button><button class="btn admin-only" type="button" data-act="wuz-test" ${w.ready ? '' : 'disabled'}>${icon('send')}Enviar teste</button></div></form>
           </div></section>
+        </div>
+        <div class="grid g2e">
+          <section class="panel"><div class="panel-head"><h2>Assistente (IA)</h2>${a.ready ? html`<span class="badge good">${icon('check')}Ligado</span>` : html`<span class="badge warn">${icon('alert')}Falta a chave</span>`}</div><div class="panel-body">
+            <form data-form="assist">
+              <label class="field"><span>Chave da API do Claude</span><input name="assistant_key" type="password" autocomplete="off" placeholder="${a.has_key ? '•••••••• (já salva; preencha só para trocar)' : a.key_from_env ? 'usando a chave configurada no servidor' : 'sk-ant-…'}"><small>Você cria a chave em console.anthropic.com → API Keys. Ela fica guardada só no seu servidor.</small></label>
+              <label class="field"><span>Modelo</span><select name="assistant_model">${a.models.map(m => html`<option value="${m.id}" ${m.id === a.model ? 'selected' : ''}>${m.label}</option>`)}</select></label>
+              <p class="form-error" role="alert" hidden></p>
+              <div class="row"><button class="btn btn-primary admin-only" type="submit">Salvar</button><button class="btn admin-only" type="button" data-act="assist-test" ${a.ready ? '' : 'disabled'}>Testar conexão</button>${a.has_key ? html`<button class="btn btn-danger admin-only" type="button" data-act="assist-clear">Remover chave</button>` : ''}</div>
+            </form></div></section>
+          <section class="panel"><div class="panel-head"><h2>Como o assistente funciona</h2></div><div class="panel-body">
+            <ul style="margin:0;padding-left:20px;line-height:1.7">
+              <li>Você pergunta em português, na tela <b>Assistente</b>, e ele consulta os dados atuais dos seus sistemas.</li>
+              <li>Ele <b>só lê</b>: não renova, não cobra e não altera nada.</li>
+              <li>O uso é cobrado na sua conta da Anthropic, por pergunta. Defina um limite de gasto mensal no console para ficar tranquilo.</li>
+              <li>Para perguntas simples, o modelo mais barato costuma bastar.</li>
+            </ul></div></section>
         </div>
         <div class="grid g2e">
           <section class="panel"><div class="panel-head"><h2>Equipe</h2><button class="btn btn-sm admin-only" data-act="user-new">${icon('plus')}Adicionar pessoa</button></div><div class="panel-body">
@@ -52,6 +68,12 @@
     const b = { wuzapi_url: d.wuzapi_url }; if (d.wuzapi_admin_token) b.wuzapi_admin_token = d.wuzapi_admin_token;
     await App.put('/settings', b); App.toast('Salvo. Agora escolha o número de envio.'); App.refresh();
   };
+  App.forms.assist = async d => {
+    const b = { assistant_model: d.assistant_model }; if (d.assistant_key) b.assistant_key = d.assistant_key;
+    await App.put('/settings', b); App.toast('Assistente salvo.'); App.refresh();
+  };
+  App.actions['assist-test'] = async (d, btn) => { await App.busy(btn, async () => { const r = await App.post('/assistant/test'); App.toast('Conexão ok com ' + r.model + '.'); }); };
+  App.actions['assist-clear'] = async () => { if (!await App.confirm('Remover a chave?', 'O assistente para de responder até você colocar outra chave.', 'Remover', true)) return; await App.put('/settings', { assistant_key_clear: true }); App.toast('Chave removida.'); App.refresh(); };
   App.actions['wuz-list'] = async (d, btn) => {
     const box = document.getElementById('wuzList');
     await App.busy(btn, async () => {

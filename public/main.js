@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const { html, icon, fmt: F } = App;
-  const NAV = [['painel', 'Painel'], ['clientes', 'Clientes'], ['financeiro', 'Financeiro'], ['relatorios', 'Relatórios'], ['marketing', 'Marketing'], ['sistemas', 'Sistemas'], ['config', 'Configurações']];
+  const NAV = [['painel', 'Painel'], ['clientes', 'Clientes'], ['financeiro', 'Financeiro'], ['relatorios', 'Relatórios'], ['marketing', 'Marketing'], ['assistente', 'Safira'], ['sistemas', 'Sistemas'], ['config', 'Configurações']];
   const LIVE_VIEWS = ['painel', 'clientes', 'financeiro', 'sistemas']; // telas sem formulário aberto: podem se atualizar sozinhas
   App.seq = 0; App.current = null; App.lastSync = Date.now();
   const $ = id => document.getElementById(id);
@@ -81,11 +81,11 @@
     App.user = user; $('login').hidden = true; $('app').hidden = false;
     document.body.classList.toggle('readonly', user.role !== 'admin');
     $('who').innerHTML = html`<b>${user.name}</b><span>${user.role === 'admin' ? user.email : 'Só visualiza • ' + user.email}</span>`.s;
-    buildNav(); paintTools(); startStream();
+    buildNav(); paintTools(); startStream(); if (App.safira) App.safira.start();
     const tab = (location.hash.match(/^#\/(\w+)/) || [])[1]; show(App.views[tab] ? tab : 'painel');
   }
   function showLogin(msg) {
-    stopStream(); App.user = null; $('app').hidden = true; $('login').hidden = false; App.closeModal(); App.closeDrawer();
+    stopStream(); if (App.safira) App.safira.stop(); App.user = null; $('app').hidden = true; $('login').hidden = false; App.closeModal(); App.closeDrawer();
     const e = $('loginError'); if (msg) { e.textContent = msg; e.hidden = false; } else e.hidden = true;
     const f = $('loginForm'); if (f.password) f.password.value = ''; paintTools();
   }

@@ -58,6 +58,25 @@ Em **Configurações**:
 2. **Quem recebe relatórios e avisos**: seu WhatsApp (um por linha) → Salvar → **Enviar teste**.
 3. Em **Relatórios**, escolha o que quer receber e a hora (o diário já vem ligado às 8h).
 
+## Passo 5 — Ligar a Safira (assistente de voz)
+
+A Safira responde por voz qualquer pergunta sobre os seus sistemas: quem vence hoje, próximos vencimentos, atrasados, quanto entrou no mês, movimento, funil e quedas. Ela só consulta; não altera nada.
+
+1. Crie uma chave em **console.anthropic.com → API Keys** (o uso é cobrado na sua conta da Anthropic, por pergunta; defina um limite de gasto mensal lá).
+2. Na central, vá em **Configurações → Assistente (IA)**, cole a chave, clique em **Salvar** e depois em **Testar conexão**.
+3. Abra a tela **Safira** no menu:
+   - escolha a **voz** (as femininas aparecem primeiro) e clique em **Ouvir esta voz**;
+   - em **Como ela te chama**, escreva o seu nome (ex.: Igor);
+   - ligue **Ouvir "Olá, Safira"** e clique em **Permitir** quando o navegador pedir o microfone.
+4. Pronto: com o sistema aberto, diga **"Olá, Safira"**. Ela cumprimenta, ouve a pergunta e responde falando. Pode emendar outra pergunta logo depois. Para encerrar, fique em silêncio ou diga "obrigado".
+   Também dá para chamar pelo botão **Safira** no topo da tela, ou falar tudo de uma vez: "Safira, quem vence hoje?".
+
+Importante:
+- O microfone **só funciona com endereço https://** (o domínio do EasyPanel já é https). Por IP sem https o navegador bloqueia.
+- Use **Google Chrome** ou **Microsoft Edge** no computador. As vozes vêm do navegador: no Edge aparecem as mais naturais (Francisca e Thalita).
+- A voz, o nome e a ativação ficam guardados **em cada aparelho** (configure de novo se abrir em outro computador).
+- No celular funciona tocando no botão Safira; deixar ouvindo "Olá, Safira" o tempo todo funciona melhor no computador.
+
 ---
 
 ## Combinados importantes
@@ -75,6 +94,8 @@ Em **Configurações**:
 | `HUB_SYNC_SECONDS` | Intervalo de leitura dos sistemas (padrão 30, mínimo 15) |
 | `HUB_JWT_SECRET` | Chave dos logins (se não definir, é criada e guardada sozinha) |
 | `WUZAPI_URL`, `WUZAPI_ADMIN_TOKEN` | Valores iniciais da WuzAPI (dá para configurar pela tela) |
+| `ANTHROPIC_API_KEY` | Chave da Safira (opcional: dá para colar pela tela) |
+| `ASSISTANT_MODEL` | Modelo da Safira (opcional: dá para escolher pela tela) |
 | `DB_PATH` | Troca o local do banco (padrão `/app/data/supersaas.db`) |
 
 ## Adicionar outro sistema no futuro
