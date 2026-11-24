@@ -40,8 +40,23 @@
 
   // ---------- texto -> fala natural ----------
   const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  // nomes escritos sem acento ou em MAIÚSCULAS: a voz soletraria "A-C-A-I"; corrigimos só para falar
+  const ACENTOS = { acai: 'açaí', acaí: 'açaí', açai: 'açaí', acougue: 'açougue', pao: 'pão', paes: 'pães', cafe: 'café', salao: 'salão', estetica: 'estética', pecas: 'peças', peca: 'peça', motopecas: 'motopeças', acessorios: 'acessórios',
+    joao: 'João', jose: 'José', sebastiao: 'Sebastião', antonio: 'Antônio', conceicao: 'Conceição', estacao: 'estação', informatica: 'informática', farmacia: 'farmácia', otica: 'ótica', grafica: 'gráfica', mecanica: 'mecânica', eletronica: 'eletrônica',
+    sorveteria: 'sorveteria', pizzaria: 'pizzaria', pastelaria: 'pastelaria', confeitaria: 'confeitaria', distribuidora: 'distribuidora', praca: 'praça', delicias: 'delícias', espetinho: 'espetinho', ze: 'Zé', sao: 'São', nacao: 'nação', paixao: 'paixão', coracao: 'coração', tentacao: 'tentação' };
+  const SIGLAS = /^(CPF|CNPJ|PIX|MEI|LTDA|ME|EPP|SA|TV|DJ|GPS|PDV|CRM|SMS|USB|VIP|BBQ|ERP|API|URL|PDF|ID)$/;
+  function sayWords(s) {
+    return s.replace(/[A-Za-zÀ-ÿ]{2,}/g, w => {
+      const low = w.toLowerCase(), fix = ACENTOS[low];
+      const isCaps = w.length > 1 && w === w.toUpperCase() && /[A-Z]/.test(w);
+      if (isCaps && SIGLAS.test(w)) return w;
+      const base = fix || (isCaps ? low : w);
+      if (fix && fix[0] === fix[0].toUpperCase()) return fix;
+      return (isCaps || /^[A-ZÀ-Ý]/.test(w)) ? base.charAt(0).toUpperCase() + base.slice(1) : base;
+    });
+  }
   function toSpeech(t) {
-    let s = String(t || '');
+    let s = sayWords(String(t || ''));
     s = s.replace(/\*\*|__|`|#+\s/g, '').replace(/^\s*(?:[-•*]|\d+[.)])\s+/gm, '').replace(/\p{Extended_Pictographic}|️/gu, '');
     s = s.replace(/−\s*R\$/g, 'menos R$');
     s = s.replace(/R\$\s*([\d.]+)(?:,(\d{1,2}))?/g, (_, r, c) => { const reais = Number(r.replace(/\./g, '')); const cent = c ? Number(c.padEnd(2, '0')) : 0; return `${reais} ${reais === 1 ? 'real' : 'reais'}${cent ? ` e ${cent} ${cent === 1 ? 'centavo' : 'centavos'}` : ''}`; });
@@ -239,7 +254,7 @@
   // ---------- normalização e palavra de ativação ----------
   const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
   const WAKE = /(?:^|\s)(?:(?:ola|oi|ei|hey|alo|fala|e ai|eae)\s+)?(?:safira|zafira|safyra|saphira|sapphira|safire|sa fira|safila)(?:\s+|$)/;
-  const FAREWELL = /^(obrigad[oa]|obrigad[oa] safira|valeu|tchau|ate mais|ate logo|so isso|era so isso|nada|nao|nao obrigado|pode fechar|fechar|encerrar|cancelar|para|pare|chega|ok obrigado|beleza obrigado)$/;
+  const FAREWELL = /^((ok |beleza |ta |entao )?(obrigad[oa]|valeu|tchau|ate mais|ate logo|ate depois|ate amanha|falou|so isso|era so isso|e so isso|nao obrigado|pode fechar|fechar|encerrar|encerra|pode encerrar|fecha|desligar|pode desligar|boa noite|bom descanso)( safira)?( (obrigad[oa]|tchau|valeu|era so isso))?)$/;
 
   // ---------- reconhecimento: um só por vez ----------
   let rec = null;
@@ -268,7 +283,7 @@
         const after = txt.slice(m.index + m[0].length).trim();
         clearTimeout(pending);
         if (res.isFinal) return fire(after);
-        pending = setTimeout(() => fire(after), after ? 1400 : 850); // parou de falar depois do nome
+        pending = setTimeout(() => fire(after), after ? 1000 : 600); // parou de falar depois do nome
       }
     };
     r.onerror = e => {
@@ -339,26 +354,35 @@
     mode = 'off'; phase = 'idle'; setTimeout(startWake, 500);
   }
 
+  // Ouve continuamente enquanto a janela estiver aberta. Ela só fecha quando você se despede (ou toca no X).
+  // Fim da frase: decidimos nós mesmos, por um silêncio curto, sem esperar o navegador (resposta mais rápida).
+  const END_FINAL = 650, END_INTERIM = 1100;
   function listen() {
     if (mode !== 'open') return;
     if (!canListen()) { setPhase('idle'); caption('', !SR ? 'Este navegador não entende voz. Use o Google Chrome ou o Microsoft Edge. Você pode digitar abaixo.' : 'O microfone só funciona com o endereço em https://. Você pode digitar abaixo.'); return; }
     killRec(); setPhase('listening'); caption(''); micOn(); // a última resposta continua na tela enquanto ela ouve
-    const r = new SR(); rec = r; r.lang = 'pt-BR'; r.continuous = false; r.interimResults = true; r.maxAlternatives = 1;
-    let fin = '', interim = '';
-    r.onresult = e => { interim = ''; for (let i = e.resultIndex; i < e.results.length; i++) { const x = e.results[i]; if (x.isFinal) fin += x[0].transcript; else interim += x[0].transcript; } caption((fin + interim).trim()); };
+    const r = new SR(); rec = r; r.lang = 'pt-BR'; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
+    let fin = '', interim = '', endT = null, sent = false, failed = false;
+    const finish = () => { if (rec !== r || sent) return; const q = (fin + ' ' + interim).replace(/\s+/g, ' ').trim(); if (!q) return; sent = true; clearTimeout(endT); killRec(); ask(q, true); };
+    r.onresult = e => {
+      if (rec !== r) return; interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) { const x = e.results[i]; if (x.isFinal) fin += ' ' + x[0].transcript; else interim += x[0].transcript; }
+      caption((fin + ' ' + interim).replace(/\s+/g, ' ').trim());
+      clearTimeout(endT); endT = setTimeout(finish, interim.trim() ? END_INTERIM : END_FINAL);
+    };
     r.onerror = e => {
       if (rec !== r) return;
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { killRec(); setPhase('idle'); caption('', 'O navegador bloqueou o microfone. Clique no cadeado ao lado do endereço e permita o microfone.'); }
-      else if (e.error === 'network') { killRec(); setPhase('idle'); caption('', 'O reconhecimento de voz precisa de internet e não conseguiu conectar.'); }
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { failed = true; killRec(); setPhase('idle'); caption('', 'O navegador bloqueou o microfone. Clique no cadeado ao lado do endereço e permita o microfone.'); }
+      else if (e.error === 'network') { failed = true; killRec(); setPhase('idle'); caption('', 'O reconhecimento de voz precisa de internet e não conseguiu conectar. Toque no globo para tentar de novo.'); }
+      else if (e.error === 'audio-capture') { failed = true; killRec(); setPhase('idle'); caption('', 'Não encontrei o microfone. Confira se ele está ligado e toque no globo.'); }
     };
     r.onend = () => {
-      if (rec !== r) return; rec = null;
-      const q = (fin || interim).trim();
-      if (q) return ask(q, true);
-      if (pendingAct) { setPhase('idle'); return; } // esperando o sim/não: não fecha
-      close(); // silêncio: fecha e volta a esperar "Olá, Safira"
+      if (rec !== r) return; rec = null; clearTimeout(endT);
+      if (sent || failed) return;
+      if ((fin + interim).trim()) { sent = true; return ask((fin + ' ' + interim).replace(/\s+/g, ' ').trim(), true); }
+      if (mode === 'open' && !busy) setTimeout(() => { if (mode === 'open' && !busy && !rec && phase === 'listening') listen(); }, 120); // silêncio: continua ouvindo, não fecha
     };
-    try { r.start(); } catch (_) { rec = null; setPhase('idle'); }
+    try { r.start(); } catch (_) { rec = null; setTimeout(() => { if (mode === 'open' && !rec) listen(); }, 400); }
   }
 
   // ---------- ações que esperam o "sim" ----------
