@@ -53,24 +53,35 @@
     if (cur) out.push(cur); return out;
   }
 
-  let speakToken = 0, speechBlocked = false;
+  let speakToken = 0, speechBlocked = false, voiceBroken = '', keep = [];
   function speak(text, opt = {}) {
     return new Promise(resolve => {
       if (!TTS) return resolve();
       const parts = chunks(toSpeech(text)); if (!parts.length) return resolve();
-      const my = ++speakToken; speechSynthesis.cancel(); let i = 0, guard = null;
-      const done = () => { clearTimeout(guard); resolve(); };
-      const next = () => {
-        clearTimeout(guard); if (my !== speakToken) return done();
-        if (i >= parts.length) return done();
-        const u = new SpeechSynthesisUtterance(parts[i++]); u.lang = 'pt-BR';
-        u.rate = opt.rate || prefs.rate; u.pitch = opt.pitch || prefs.pitch; const v = opt.voice || currentVoice(); if (v) { u.voice = v; u.lang = v.lang; }
-        u.onboundary = () => orbKick(0.32); u.onstart = () => orbKick(0.4);
-        u.onend = next; u.onerror = e => { if (e && e.error === 'not-allowed') { speechBlocked = true; } next(); };
-        guard = setTimeout(next, 2500 + u.text.length * 95); // se o navegador "esquecer" de avisar o fim
+      const my = ++speakToken; let i = 0, guard = null, startT = null;
+      if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel(); // cancelar e falar no mesmo instante faz o Chrome engolir a fala
+      const done = () => { clearTimeout(guard); clearTimeout(startT); keep = []; resolve(); };
+      const say = (txt, useVoice) => {
+        const u = new SpeechSynthesisUtterance(txt); keep.push(u); u.lang = 'pt-BR';
+        u.rate = opt.rate || prefs.rate; u.pitch = opt.pitch || prefs.pitch;
+        const v = useVoice ? (opt.voice || currentVoice()) : null; if (v) { u.voice = v; u.lang = v.lang; }
+        let started = false;
+        u.onstart = () => { started = true; clearTimeout(startT); orbKick(0.4); };
+        u.onboundary = () => orbKick(0.32);
+        u.onend = () => { if (started || !useVoice) next(); };
+        u.onerror = e => { clearTimeout(startT); if (e && e.error === 'not-allowed') speechBlocked = true; if (e && (e.error === 'interrupted' || e.error === 'canceled')) return; if (!started && useVoice && v) { voiceBroken = v.name; return say(txt, false); } next(); };
+        // a voz escolhida não começou a falar: tenta com a voz padrão do navegador
+        startT = setTimeout(() => { if (started || my !== speakToken) return; if (useVoice && v) { voiceBroken = v.name; speechSynthesis.cancel(); setTimeout(() => say(txt, false), 80); } else next(); }, 2500);
+        clearTimeout(guard); guard = setTimeout(next, 6000 + txt.length * 110); // se o navegador "esquecer" de avisar o fim
+        try { speechSynthesis.resume(); } catch (_) { /* ok */ }
         speechSynthesis.speak(u);
       };
-      next();
+      const next = () => {
+        clearTimeout(guard); clearTimeout(startT); if (my !== speakToken) return done();
+        if (i >= parts.length) return done();
+        say(parts[i++], true);
+      };
+      setTimeout(next, 90);
     });
   }
   function stopSpeaking() { speakToken++; if (TTS) speechSynthesis.cancel(); }
@@ -248,7 +259,6 @@
     if (ov.hidden) { ov.hidden = false; requestAnimationFrame(() => ov.classList.add('on')); bigOrb.start(); caption('', ''); }
     ov.querySelector('.saf-x').focus({ preventScroll: true });
     if (Date.now() - ctxAt > 5 * 60000) { ctxMsgs = []; saveCtx(); }
-    if (canListen()) micOn();
     if (after && after.split(' ').length >= 2) return ask(after, true);
     greet();
   }
@@ -267,7 +277,7 @@
   function listen() {
     if (mode !== 'open') return;
     if (!canListen()) { setPhase('idle'); caption('', !SR ? 'Este navegador não entende voz. Use o Google Chrome ou o Microsoft Edge. Você pode digitar abaixo.' : 'O microfone só funciona com o endereço em https://. Você pode digitar abaixo.'); return; }
-    killRec(); setPhase('listening'); caption('', '');
+    killRec(); setPhase('listening'); caption('', ''); micOn();
     const r = new SR(); rec = r; r.lang = 'pt-BR'; r.continuous = false; r.interimResults = true; r.maxAlternatives = 1;
     let fin = '', interim = '';
     r.onresult = e => { interim = ''; for (let i = e.resultIndex; i < e.results.length; i++) { const x = e.results[i]; if (x.isFinal) fin += x[0].transcript; else interim += x[0].transcript; } caption((fin + interim).trim()); };
@@ -331,6 +341,12 @@
     start() { mountTop(); startWake(); },
     stop() { close(); stopWake(); mode = 'off'; },
     setWake(on) { prefs.wake = on; if (on) startWake(); else stopWake(); },
-    test(voiceId, rate, pitch) { const v = voices().find(x => x.id === voiceId); return speak(greeting(), { voice: v && v.v, rate, pitch }); }
+    test(voiceId, rate, pitch) {
+      const v = voices().find(x => x.id === voiceId); voiceBroken = ''; speechBlocked = false;
+      return speak(greeting(), { voice: v && v.v, rate, pitch }).then(() => {
+        if (speechBlocked) App.toast('O navegador bloqueou o som. Clique uma vez na página e tente de novo.', true);
+        else if (voiceBroken) App.toast('A voz “' + (v ? v.label : voiceBroken) + '” não funcionou neste navegador. Usei a voz padrão; escolha outra na lista.', true);
+      });
+    },
   };
 })();
