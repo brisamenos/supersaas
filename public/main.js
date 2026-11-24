@@ -25,7 +25,6 @@
     const label = Object.fromEntries(NAV);
     $('nav').innerHTML = GROUPS.map(([g, keys]) => `<div class="nav-group"><span class="nav-cap">${g}</span>` + keys.map(k => `<a href="#/${k}" data-tab="${k}">${icon(k).s}<span>${label[k]}</span><span class="count" hidden></span></a>`).join('') + '</div>').join('');
   }
-  const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
   const today = () => { const t = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Fortaleza' }); return t.charAt(0).toUpperCase() + t.slice(1); };
   App.setBadge = (tab, n) => { const el = document.querySelector(`#nav [data-tab="${tab}"] .count`); if (!el) return; el.hidden = !n; el.textContent = n > 99 ? '99+' : n; el.setAttribute('aria-label', `${n} pendente${n === 1 ? '' : 's'}`); };
   App.go = tab => { if (location.hash === '#/' + tab) App.refresh(); else location.hash = '#/' + tab; };
@@ -84,10 +83,13 @@
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintTools);
 
   // ---------- login / sessão ----------
+  // canto do menu: foto (ou iniciais), nome e e-mail; clicar leva ao "Meu perfil" nas Configurações
+  App.paintWho = () => { const user = App.user; if (!user) return;
+    $('who').innerHTML = html`<a class="who-link" href="#/config" title="Meu perfil: trocar foto e senha">${App.avatar(user)}<span class="who-txt"><b>${user.name}</b><span>${user.role === 'admin' ? user.email : 'Só visualiza • ' + user.email}</span></span></a>`.s; };
   function enter(user) {
     App.user = user; $('login').hidden = true; $('app').hidden = false;
     document.body.classList.toggle('readonly', user.role !== 'admin');
-    $('who').innerHTML = html`<span class="avatar" aria-hidden="true">${initials(user.name)}</span><span class="who-txt"><b>${user.name}</b><span>${user.role === 'admin' ? user.email : 'Só visualiza • ' + user.email}</span></span>`.s;
+    App.paintWho();
     buildNav(); paintTools(); startStream(); if (App.safira) App.safira.start();
     const tab = (location.hash.match(/^#\/(\w+)/) || [])[1]; show(App.views[tab] ? tab : 'painel');
   }

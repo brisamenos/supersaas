@@ -1,4 +1,4 @@
-// Configurações: WhatsApp (WuzAPI), quem recebe avisos, equipe, senha e histórico
+// Configurações: WhatsApp (WuzAPI), quem recebe avisos, equipe, meu perfil (foto e senha) e histórico
 (function () {
   'use strict';
   const { html, icon, fmt: F } = App;
@@ -53,9 +53,21 @@
         </div>
         <div class="grid g2e">
           <section class="panel"><div class="panel-head"><h2>Equipe</h2><button class="btn btn-sm admin-only" data-act="user-new">${icon('plus')}Adicionar pessoa</button></div><div class="panel-body">
-            <ul class="feed">${us.users.map(u => html`<li><span><b style="font-weight:600">${u.name}</b><br><span class="sys">${u.email}</span></span><span class="badge" style="margin-left:auto">${ROLE[u.role] || u.role}</span>${u.email === App.user.email ? '' : html`<button class="icon-btn admin-only" data-act="user-del" data-id="${u.id}" data-name="${u.name}" aria-label="Remover ${u.name}">${icon('trash')}</button>`}</li>`)}</ul>
+            <ul class="feed team">${us.users.map(u => html`<li>${App.avatar(u, 'sm')}<span><b style="font-weight:600">${u.name}</b><br><span class="sys">${u.email}</span></span><span class="badge" style="margin-left:auto">${ROLE[u.role] || u.role}</span>${u.email === App.user.email ? '' : html`<button class="icon-btn admin-only" data-act="user-del" data-id="${u.id}" data-name="${u.name}" aria-label="Remover ${u.name}">${icon('trash')}</button>`}</li>`)}</ul>
           </div></section>
-          <section class="panel"><div class="panel-head"><h2>Minha senha</h2></div><div class="panel-body">
+          <section class="panel" id="meuPerfil"><div class="panel-head"><h2>Meu perfil</h2></div><div class="panel-body">
+            <div class="profile-row">
+              <label class="profile-pic" for="avatarFile" title="Trocar foto">${App.avatar(App.user, 'xl')}<span class="profile-cam">${icon('camera')}</span></label>
+              <div class="profile-txt"><b>${App.user.name}</b><span>${App.user.email}</span>
+                <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap">
+                  <label class="btn btn-sm" for="avatarFile">${icon('camera')}${App.user.avatar ? 'Trocar foto' : 'Colocar foto'}</label>
+                  ${App.user.avatar ? html`<button class="btn btn-sm" data-act="avatar-del">Remover foto</button>` : ''}
+                </div>
+                <small class="muted">JPG, PNG ou WebP. A foto é cortada em quadrado e aparece no menu.</small>
+              </div>
+              <input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/*" hidden>
+            </div>
+            <h3 class="profile-sub">Trocar senha</h3>
             <form data-form="mypass" autocomplete="off"><label class="field"><span>Senha atual</span><input name="current" type="password" required autocomplete="current-password"></label>
               <label class="field"><span>Nova senha</span><input name="password" type="password" required minlength="8" autocomplete="new-password"><small>Mínimo de 8 caracteres.</small></label>
               <p class="form-error" role="alert" hidden></p><button class="btn btn-primary" type="submit">Trocar senha</button></form>
@@ -69,6 +81,7 @@
             ${au.audit.length ? html`<ul class="feed">${au.audit.map(a => html`<li><span><b style="font-weight:600">${a.action}</b> <span class="sys">${a.detail || ''}<br>${a.user}</span></span><time>${F.clock(a.ts)}</time></li>`)}</ul>` : html`<p class="muted small">Sem registros.</p>`}
           </div></section>
         </div>`);
+      if (S.goPerfil) { S.goPerfil = false; setTimeout(toPerfil, 60); }
     }
   };
 
@@ -109,5 +122,41 @@
     <p class="form-error" role="alert" hidden></p><div class="modal-actions"><button class="btn" type="button" data-act="close-modal">Cancelar</button><button class="btn btn-primary" type="submit">Adicionar</button></div></form>`);
   App.forms.user = async d => { await App.post('/users', d); App.closeModal(); App.toast('Pessoa adicionada.'); App.refresh(); };
   App.actions['user-del'] = async d => { if (!await App.confirm(`Remover ${d.name}?`, 'A pessoa perde o acesso à central agora.', 'Remover', true)) return; await App.del('/users/' + d.id); App.toast('Acesso removido.'); App.refresh(); };
+  // Foto de perfil: o navegador corta em quadrado e reduz para 256 x 256 antes de enviar (fica leve)
+  function shrink(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = () => {
+        const side = Math.min(img.naturalWidth, img.naturalHeight), N = 256, c = document.createElement('canvas'); c.width = c.height = N;
+        const g = c.getContext('2d'); g.imageSmoothingQuality = 'high';
+        g.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, N, N);
+        URL.revokeObjectURL(url); resolve(c.toDataURL('image/jpeg', 0.86));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Não consegui abrir essa imagem. Use uma foto JPG ou PNG.')); };
+      img.src = url;
+    });
+  }
+  async function saveAvatar(image) {
+    const r = await App.post('/me/avatar', { image });
+    App.user.avatar = r.avatar; App.paintWho();
+  }
+  document.addEventListener('change', async e => {
+    if (e.target.id !== 'avatarFile') return;
+    const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+    if (!/^image\//.test(f.type)) return App.toast('Escolha um arquivo de imagem.', true);
+    if (f.size > 20 * 1024 * 1024) return App.toast('Essa imagem é muito grande (mais de 20 MB).', true);
+    try { await saveAvatar(await shrink(f)); App.toast('Foto atualizada.'); App.refresh(); }
+    catch (err) { App.toast(err.message || 'Não deu para salvar a foto.', true); }
+  });
+  // clicar na foto/nome do menu leva direto ao "Meu perfil"
+  const toPerfil = () => { const el = document.getElementById('meuPerfil'); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400); } };
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.who-link')) return;
+    if (/^#\/config/.test(location.hash)) { e.preventDefault(); toPerfil(); } else S.goPerfil = true;
+  });
+  App.actions['avatar-del'] = async () => {
+    if (!await App.confirm('Remover a foto?', 'No lugar dela aparecem as suas iniciais.', 'Remover', true)) return;
+    await saveAvatar(null); App.toast('Foto removida.'); App.refresh();
+  };
   App.forms.mypass = async (d, form) => { await App.post('/password', { current: d.current, password: d.password }); form.reset(); App.toast('Senha trocada.'); };
 })();

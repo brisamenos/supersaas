@@ -690,3 +690,27 @@ dialog { box-shadow: var(--shadow-lg); }
   .fin-lists .lrow .admin-only { grid-column: 1 / -1; }
   .fin-lists .right { padding-right: 0; }
 }
+
+/* ---------- foto de perfil ---------- */
+.avatar.has-img { background: var(--surface-3); overflow: hidden; padding: 0; }
+.avatar.has-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar.sm { width: 30px; height: 30px; border-radius: 9px; font-size: 11px; }
+.avatar.xl { width: 88px; height: 88px; border-radius: 24px; font-size: 28px; }
+.who-link { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; color: inherit; text-decoration: none; border-radius: 12px; padding: 4px; margin: -4px; transition: background .15s; }
+.who-link:hover { background: rgba(255,255,255,.06); }
+.who-link:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.who .avatar.has-img { box-shadow: 0 0 0 2px rgba(61,219,176,.55); }
+.profile-row { display: flex; align-items: center; gap: 18px; padding-bottom: 18px; margin-bottom: 16px; border-bottom: 1px solid var(--line-2); }
+.profile-pic { position: relative; cursor: pointer; flex: none; border-radius: 24px; }
+.profile-pic:hover .avatar { filter: brightness(.92); }
+.profile-cam { position: absolute; right: -6px; bottom: -6px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--bg); border: 3px solid var(--surface); }
+.profile-cam svg.ic { width: 16px; height: 16px; }
+.profile-txt { min-width: 0; display: flex; flex-direction: column; }
+.profile-txt b { font: 600 16px var(--f-body); }
+.profile-txt > span { color: var(--ink-3); font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; }
+.profile-txt small { margin-top: 8px; font-size: 12.5px; }
+.profile-row label.btn { cursor: pointer; }
+.profile-sub { font: 600 15px var(--f-body); margin: 0 0 10px; }
+.feed.team li { gap: 12px; }
+#meuPerfil { scroll-margin-top: 16px; transition: box-shadow .3s; }
+#meuPerfil.flash { box-shadow: 0 0 0 3px rgba(61,219,176,.45), var(--shadow-lg, 0 10px 30px rgba(0,0,0,.12)); }
