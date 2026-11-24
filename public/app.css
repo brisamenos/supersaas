@@ -111,7 +111,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* ---------- Pulso: um batimento por sistema ---------- */
 .pulse { margin-top: 8px; overflow: hidden; }
-.pulse-row { display: grid; grid-template-columns: minmax(170px, 1.1fr) 150px minmax(170px, 1fr) repeat(3, minmax(84px, .55fr)); align-items: center; gap: 18px; padding: 16px 22px; border-top: 1px solid var(--line-2); }
+.pulse-row { display: grid; grid-template-columns: minmax(190px, 1.5fr) 150px minmax(170px, .9fr) repeat(3, minmax(90px, .6fr)); align-items: center; gap: 18px; padding: 16px 22px; border-top: 1px solid var(--line-2); }
 .pulse-row:first-child { border-top: 0; }
 .pulse-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .pulse-name b { font: 600 16px var(--f-display); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -672,4 +672,21 @@ dialog { box-shadow: var(--shadow-lg); }
 }
 @media (prefers-reduced-motion: reduce) {
   .hero-pulse path { animation: none; stroke-dashoffset: 0; }
+}
+
+/* ---------- ajustes de espaço (telas grandes) ---------- */
+/* a faixa escura do menu vai até o fim da página, mesmo nas páginas compridas */
+.app { background: linear-gradient(90deg, var(--side) 0 252px, var(--bg) 252px 100%); }
+/* o conteúdo usa a largura do monitor (1920 px) e fica centralizado nas telas muito largas */
+.main { max-width: 1640px; width: 100%; margin-inline: auto; box-sizing: border-box; }
+/* "Precisa de atenção" mostra as 3 principais; o resto fica a um clique */
+.alert-more { display: block; width: 100%; margin-top: 6px; padding: 12px 0 2px; border: 0; border-top: 1px solid var(--line-2); background: none; color: var(--info); font: 600 13.5px var(--f-body); text-align: left; cursor: pointer; }
+.alert-more:hover { text-decoration: underline; }
+.fin-lists { margin-top: 18px; }
+.fin-lists .right { text-align: right; padding-right: 18px; }
+@media (max-width: 860px) {
+  .app { background: var(--bg); }
+  .fin-lists .lrow { grid-template-columns: minmax(0, 1fr) auto !important; }
+  .fin-lists .lrow .admin-only { grid-column: 1 / -1; }
+  .fin-lists .right { padding-right: 0; }
 }

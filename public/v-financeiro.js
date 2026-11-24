@@ -6,9 +6,9 @@
   let data = null;
   const CATS = ['Mensalidade', 'Anúncios', 'Servidor e domínio', 'Ferramentas', 'Impostos', 'Equipe', 'Outros'];
 
-  const clientLine = (c, late) => html`<div class="lrow" style="grid-template-columns:minmax(0,1fr) auto auto;padding:11px 0">
+  const clientLine = (c, late) => html`<div class="lrow" style="grid-template-columns:minmax(0,1fr) 110px auto;padding:11px 0">
     <div class="main-cell wrap"><b>${c.name}</b><small>${c.system_name} • ${late ? html`<span style="color:var(--bad)">venceu em ${F.date(c.expires_at)} (${c.days_late} dia${c.days_late === 1 ? '' : 's'})</span>` : (c.days_left === 0 ? 'vence hoje' : `vence em ${c.days_left} dia${c.days_left === 1 ? '' : 's'} (${F.date(c.expires_at)})`)}</small></div>
-    <b>${c.price ? F.brl(c.price) : '—'}</b>
+    <b class="right">${c.price ? F.brl(c.price) : '—'}</b>
     <div class="row admin-only" style="gap:6px;flex-wrap:nowrap"><button class="btn btn-sm" data-act="fin-charge" data-sys="${c.system_id}" data-ext="${c.ext_id}" data-late="${late ? 1 : 0}" ${String(c.phone || '').replace(/\D/g, '') ? '' : 'disabled title="Sem telefone"'}>${icon('send')}Cobrar</button><button class="btn btn-sm btn-primary" data-act="fin-renew" data-sys="${c.system_id}" data-ext="${c.ext_id}">Renovar</button></div>
   </div>`;
 
@@ -49,7 +49,7 @@
             <h3 style="font:600 15px var(--f-body);margin:22px 0 6px">Despesas por categoria</h3><div id="chCats"></div>
           </div></section>
         </div>
-        <div class="grid g2e">
+        <div class="stack fin-lists">
           <section class="panel"><div class="panel-head"><h2>Em atraso</h2><span class="hint">${F.brl0(d.late_total)} por mês parados</span></div><div class="panel-body">
             ${d.late.length ? d.late.map(c => clientLine(c, true)) : html`<p class="muted small">Ninguém em atraso.</p>`}</div></section>
           <section class="panel"><div class="panel-head"><h2>Vencem nos próximos 7 dias</h2><span class="hint">${F.brl0(d.due7_total)} a receber</span></div><div class="panel-body">

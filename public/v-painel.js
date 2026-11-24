@@ -75,7 +75,8 @@
 
   function alertList(list) {
     if (!list.length) return html`<div class="empty" style="padding:24px 0"><h3>Tudo em ordem</h3>Nenhuma pendência agora. Os avisos aparecem aqui quando algo precisar de você.</div>`;
-    return list.map(i => html`<div class="alert ${i.level}"><span class="ico">${icon(i.icon)}</span><div><h3>${i.title}</h3><p>${i.detail}</p></div>${i.action ? html`<button class="btn btn-sm" data-act="insight-go" data-tab="${i.action.tab}" data-segment="${i.action.segment || ''}">${i.action.label}</button>` : ''}</div>`);
+    const MAX = 3, rest = list.length - MAX; // o painel mostra só as 3 mais importantes; o resto fica no Marketing
+    return html`${list.slice(0, MAX).map(i => html`<div class="alert ${i.level}"><span class="ico">${icon(i.icon)}</span><div><h3>${i.title}</h3><p>${i.detail}</p></div>${i.action ? html`<button class="btn btn-sm" data-act="insight-go" data-tab="${i.action.tab}" data-segment="${i.action.segment || ''}">${i.action.label}</button>` : ''}</div>`)}${rest > 0 ? html`<button class="alert-more" data-act="goto" data-tab="marketing">Ver mais ${rest} sugest${rest === 1 ? 'ão' : 'ões'}</button>` : ''}`;
   }
 
   App.actions.goto = d => App.go(d.tab);
