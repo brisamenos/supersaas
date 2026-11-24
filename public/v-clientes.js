@@ -74,7 +74,7 @@
     App.setDrawerBody(html`
       <div class="row" style="margin-bottom:6px">${App.stateBadge(c.state, c.days_left)}<span class="small muted">${c.system_name}</span></div>
       <dl class="facts">
-        <dt>Mensalidade</dt><dd>${c.price ? F.brl(c.price) : '—'}${c.plan ? ' • ' + c.plan : ''}</dd>
+        <dt>Mensalidade</dt><dd>${c.price ? F.brl(c.price) : '—'}${c.plan ? ' • ' + c.plan : ''} <button class="linkish admin-only" data-act="client-price">Alterar</button></dd>
         <dt>Vencimento</dt><dd>${c.expires_at ? F.date(c.expires_at) : 'sem data'}</dd>
         <dt>WhatsApp</dt><dd>${F.phone(c.phone) || '—'}</dd>
         <dt>E-mail (login)</dt><dd>${c.email || '—'}</dd>
@@ -130,6 +130,13 @@
     const c = find(); const r = await App.post(cPath(c) + '/password', { password: d.password || undefined, send: d.send });
     showCreds('Senha trocada', { name: c.name, login_url: c.login_url, email: c.email, password: r.password, whatsapp: r.whatsapp });
   };
+  App.actions['client-price'] = () => {
+    const c = find();
+    App.openModal('Alterar mensalidade', html`<p class="muted">${c.name} • ${c.system_name}. O novo valor vale para as próximas renovações e para as contas da central.</p>
+      <form data-form="client-price"><label class="field"><span>Mensalidade (R$)</span><input name="price" inputmode="decimal" required value="${c.price ? c.price.toFixed(2).replace('.', ',') : ''}" placeholder="0,00"></label>
+      <p class="form-error" role="alert" hidden></p><div class="modal-actions"><button class="btn" type="button" data-act="close-modal">Cancelar</button><button class="btn btn-primary" type="submit">Salvar</button></div></form>`);
+  };
+  App.forms['client-price'] = async d => { const r = await App.post(cPath(find()) + '/price', { price: parseMoney(d.price) }); App.closeModal(); App.toast('Mensalidade agora é ' + F.brl(r.price) + '.'); await afterAction(); };
   App.actions['client-msg'] = () => {
     const c = find();
     App.openModal('Mensagem no WhatsApp', html`<p class="muted">Para ${c.name} (${F.phone(c.phone)}). Você pode usar {nome}, {sistema}, {valor}, {vencimento} e {dias}.</p>

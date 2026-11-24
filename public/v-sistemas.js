@@ -31,7 +31,7 @@
   };
 
   const form = s => html`<form data-form="sys"><input type="hidden" name="id" value="${s ? s.id : ''}">
-    ${s ? '' : html`<label class="field"><span>Tipo de sistema</span><select name="kind"><option value="">Detectar sozinho</option><option value="barbersync">BarberSync (barbearias)</option><option value="estimafood">EstimaFood (delivery e restaurantes)</option><option value="motostock">MotoStock (lojas de moto)</option><option value="custom">Outro</option></select></label>`}
+    ${s ? '' : html`<label class="field"><span>Tipo de sistema</span><select name="kind"><option value="">Detectar sozinho</option><option value="barbersync">BarberSync (barbearias)</option><option value="estimafood">EstimaFood (delivery e restaurantes)</option><option value="motostock">MotoStock (lojas de moto)</option><option value="controlefacil">Controle Fácil (cobranças e parcelas)</option><option value="custom">Outro</option></select></label>`}
     <label class="field"><span>Nome na central</span><input name="name" value="${s ? s.name : ''}" placeholder="ex.: BarberSync" ${s ? 'required' : ''}></label>
     <label class="field"><span>Endereço do sistema</span><input name="base_url" type="url" required value="${s ? s.base_url : ''}" placeholder="https://meusistema.com"></label>
     <label class="field"><span>Token do conector${s ? ' (deixe em branco para manter)' : ''}</span><input name="token" ${s ? '' : 'required'} minlength="8" autocomplete="off" placeholder="${s ? s.token_hint : 'o mesmo valor de HUB_TOKEN do sistema'}"><small>É a variável HUB_TOKEN que você criou no EasyPanel do sistema.</small></label>

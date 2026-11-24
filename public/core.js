@@ -65,7 +65,7 @@
     return html`<span class="badge ${m[0]}">${icon(m[1])}${m[2]}</span>`;
   };
   // Cor fixa por tipo de sistema (a cor segue o sistema, nunca a posição)
-  const KIND_SLOT = { barbersync: 1, estimafood: 2, motostock: 3, custom: 4 };
+  const KIND_SLOT = { barbersync: 1, estimafood: 2, motostock: 3, controlefacil: 5, custom: 4 };
   App.sysColor = kind => `var(--s${KIND_SLOT[kind] || 4})`;
 
   // ---------- API ----------

@@ -4,7 +4,7 @@
   const { html, raw, icon, fmt: F } = App;
   const S = App.state = App.state || {};
   const TABS = [['estrategias', 'Estratégias'], ['comunicados', 'Comunicados'], ['funil', 'Funil de vendas'], ['campanhas', 'Campanhas']];
-  const KINDS = { barbersync: 'BarberSync', estimafood: 'EstimaFood', motostock: 'MotoStock', custom: 'Outro' };
+  const KINDS = { barbersync: 'BarberSync', estimafood: 'EstimaFood', motostock: 'MotoStock', controlefacil: 'Controle Fácil', custom: 'Outro' };
   const STAGE = { novo: 'Novo', contato: 'Em contato', demo: 'Demonstração', proposta: 'Proposta', fechado: 'Fechado', perdido: 'Perdido' };
   const SOURCES = ['Instagram', 'Indicação', 'Anúncio', 'Site', 'WhatsApp', 'Evento'];
   const CHANNELS = ['Instagram', 'Meta Ads', 'Google Ads', 'Indicação', 'Parceria', 'Outro'];

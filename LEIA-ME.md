@@ -1,6 +1,6 @@
 # SuperSaaS — a central dos seus sistemas
 
-Um painel só para ver e mandar em tudo: **BarberSync, MotoStock e EstimaFood** (e qualquer sistema novo que ganhar o conector).
+Um painel só para ver e mandar em tudo: **BarberSync, MotoStock, EstimaFood e Controle Fácil** (e qualquer sistema novo que ganhar o conector).
 
 O que ele faz:
 - **Painel em tempo real**: cada sistema tem um "batimento" (no ar / fora do ar), mais receita mensal, vencidos, movimento do dia.
@@ -36,12 +36,15 @@ Cada zip de conector traz **só os arquivos que mudam**. Copie por cima do proje
 | BarberSync | `hub-connector.js` e `server.js` |
 | MotoStock | `routes/hub_connector.js` e `server.js` |
 | EstimaFood | `hub-connector.js` e `routes.js` |
+| Controle Fácil | `hub-connector.js` e `server.js` |
 
 Depois, no EasyPanel **de cada sistema**:
 1. Crie a variável `HUB_TOKEN` com uma senha longa e diferente para cada sistema (ex.: 40 letras e números aleatórios).
 2. **Reconstrua a imagem** (Deploy/Rebuild). Só reiniciar não basta, porque os arquivos mudaram.
 
 Sem `HUB_TOKEN`, o conector fica desligado e o sistema funciona exatamente como antes.
+
+**Controle Fácil:** na central, cada **administrador** do Controle Fácil aparece como um cliente (vencimento = "acesso até", bloquear/desbloquear, renovar, nova senha). O Controle Fácil não guardava quanto cada administrador paga: use **Alterar** ao lado de "Mensalidade" na ficha do cliente (ou peça para a Safira). Opcional: a variável `HUB_PRECO_PADRAO` (ex.: `49.90`) vale para quem ainda não tem valor. "Uso" do administrador = recebimentos que ele lançou no Controle Fácil.
 
 ## Passo 3 — Conectar na central
 
