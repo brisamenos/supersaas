@@ -48,16 +48,12 @@
       <path class="spark-area" d="${line}L${W} ${H}L0 ${H}Z" fill="url(#spg)"/><path class="spark-line" d="${line}"/><circle class="spark-dot" cx="${last[0]}" cy="${last[1]}" r="3.5"/></svg>`;
   }
   function hero(k, series) {
-    const hNow = Number(new Date().toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/Fortaleza' }));
-    const part = hNow < 12 ? 'Bom dia' : hNow < 18 ? 'Boa tarde' : 'Boa noite';
-    let nome = (App.safira && App.safira.prefs && App.safira.prefs.name) || String(App.user && App.user.name || '').split(' ')[0];
-    if (/^(admin|administrador)$/i.test(nome)) nome = '';
     const pts = (series || []).filter(p => p.mrr !== null && p.mrr !== undefined);
     const delta = pts.length > 1 ? (pts[pts.length - 1].mrr - pts[0].mrr) : null;
     const kpi = (ic, tone, val, label, tab) => html`<button class="hk ${tone}" data-act="goto" data-tab="${tab}"><span class="hk-ico">${icon(ic)}</span><span class="hk-txt"><b>${val}</b><span>${label}</span></span></button>`;
     return html`<section class="hero" aria-label="Resumo do negócio">
       <div class="hero-main">
-        <p class="hero-hi">${part}${nome ? ', ' + nome : ''}. Aqui está o seu negócio agora.</p>
+        <a class="hero-me" href="#/config" title="Meu perfil">${App.avatar(App.user, 'hero')}<span><b>${App.hello(App.user)}</b><span>${App.dayPart()}. Aqui está o seu negócio agora.</span></span></a>
         <div class="hero-label">Receita mensal recorrente</div>
         <div class="hero-value">${F.brl0(k.mrr)}</div>
         <div class="hero-note">${delta !== null && Math.abs(delta) >= 1 ? html`<span class="trend ${delta > 0 ? 'up' : 'down'}">${icon(delta > 0 ? 'up' : 'down')}${delta > 0 ? '+' : ''}${F.brl0(delta)} em ${pts.length} dias</span>` : ''}<span>${F.brl0(k.arr)} por ano • ticket médio ${F.brl0(k.ticket)}</span></div>

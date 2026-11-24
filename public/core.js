@@ -128,6 +128,11 @@
     ? `<span class="avatar has-img${cls ? ' ' + cls : ''}" aria-hidden="true"><img src="${u.avatar}" alt=""></span>`
     : `<span class="avatar${cls ? ' ' + cls : ''}" aria-hidden="true">${html`${App.initials(u && u.name)}`.s}</span>`);
 
+  // Saudação: "Olá, CEO Igor" (cargo + primeiro nome)
+  App.firstName = u => { const n = String(u && u.name || '').trim().split(/\s+/)[0] || ''; return /^(admin|administrador|usu[aá]rio)$/i.test(n) ? '' : n; };
+  App.hello = u => { const who = [u && u.title, App.firstName(u)].filter(Boolean).join(' '); return who ? `Olá, ${who}` : 'Olá'; };
+  App.dayPart = () => { const h = Number(new Date().toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/Fortaleza' })); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; };
+
   // ---------- API ----------
   App.api = async function (path, opts = {}) {
     const init = { method: opts.method || 'GET', headers: { Accept: 'application/json' } };

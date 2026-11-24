@@ -67,6 +67,10 @@
               </div>
               <input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp,image/*" hidden>
             </div>
+            <form data-form="mytitle" class="profile-title" autocomplete="off">
+              <label class="field"><span>Cargo na saudação</span><input name="title" maxlength="24" value="${App.user.title || ''}" placeholder="Ex.: CEO, Diretor, Gerente"><small>Aparece no topo: “${App.hello(App.user)}”. Deixe vazio para só o nome.</small></label>
+              <button class="btn btn-sm" type="submit">Salvar cargo</button>
+            </form>
             <h3 class="profile-sub">Trocar senha</h3>
             <form data-form="mypass" autocomplete="off"><label class="field"><span>Senha atual</span><input name="current" type="password" required autocomplete="current-password"></label>
               <label class="field"><span>Nova senha</span><input name="password" type="password" required minlength="8" autocomplete="new-password"><small>Mínimo de 8 caracteres.</small></label>
@@ -151,12 +155,13 @@
   // clicar na foto/nome do menu leva direto ao "Meu perfil"
   const toPerfil = () => { const el = document.getElementById('meuPerfil'); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1400); } };
   document.addEventListener('click', e => {
-    if (!e.target.closest('.who-link')) return;
+    if (!e.target.closest('.who-link, .me-top, .hero-me')) return;
     if (/^#\/config/.test(location.hash)) { e.preventDefault(); toPerfil(); } else S.goPerfil = true;
   });
   App.actions['avatar-del'] = async () => {
     if (!await App.confirm('Remover a foto?', 'No lugar dela aparecem as suas iniciais.', 'Remover', true)) return;
     await saveAvatar(null); App.toast('Foto removida.'); App.refresh();
   };
+  App.forms.mytitle = async d => { const r = await App.post('/me/title', { title: d.title }); App.user.title = r.title; App.paintWho(); App.toast('Saudação: ' + App.hello(App.user)); App.refresh(); };
   App.forms.mypass = async (d, form) => { await App.post('/password', { current: d.current, password: d.password }); form.reset(); App.toast('Senha trocada.'); };
 })();

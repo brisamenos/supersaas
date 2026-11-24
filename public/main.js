@@ -32,7 +32,7 @@
   async function show(tab) {
     const view = App.views[tab] || App.views.painel; if (!App.views[tab]) tab = 'painel';
     App.seq++; Charts.dispose(); App.cleanup.splice(0).forEach(fn => { try { fn(); } catch (_) { /* ok */ } });
-    App.current = tab;
+    App.current = tab; document.body.dataset.view = tab;
     document.querySelectorAll('#nav a').forEach(a => { if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     $('pageTitle').textContent = view.title; document.title = view.title + ' • SuperSaaS';
     const sub = $('pageSub'); if (sub) sub.textContent = view.subtitle || today();
@@ -85,7 +85,8 @@
   // ---------- login / sessão ----------
   // canto do menu: foto (ou iniciais), nome e e-mail; clicar leva ao "Meu perfil" nas Configurações
   App.paintWho = () => { const user = App.user; if (!user) return;
-    $('who').innerHTML = html`<a class="who-link" href="#/config" title="Meu perfil: trocar foto e senha">${App.avatar(user)}<span class="who-txt"><b>${user.name}</b><span>${user.role === 'admin' ? user.email : 'Só visualiza • ' + user.email}</span></span></a>`.s; };
+    $('who').innerHTML = html`<a class="who-link" href="#/config" title="Meu perfil: trocar foto e senha">${App.avatar(user)}<span class="who-txt"><b>${user.name}</b><span>${user.role === 'admin' ? user.email : 'Só visualiza • ' + user.email}</span></span></a>`.s;
+    const me = $('meTop'); if (me) { me.hidden = false; me.innerHTML = html`<span class="me-txt"><b>${App.hello(user)}</b><span>${App.dayPart()}, bom te ver por aqui</span></span>${App.avatar(user, 'top')}`.s; } };
   function enter(user) {
     App.user = user; $('login').hidden = true; $('app').hidden = false;
     document.body.classList.toggle('readonly', user.role !== 'admin');
@@ -94,7 +95,7 @@
     const tab = (location.hash.match(/^#\/(\w+)/) || [])[1]; show(App.views[tab] ? tab : 'painel');
   }
   function showLogin(msg) {
-    stopStream(); if (App.safira) App.safira.stop(); App.user = null; $('app').hidden = true; $('login').hidden = false; App.closeModal(); App.closeDrawer();
+    stopStream(); if (App.safira) App.safira.stop(); App.user = null; if ($('meTop')) $('meTop').hidden = true; $('app').hidden = true; $('login').hidden = false; App.closeModal(); App.closeDrawer();
     const e = $('loginError'); if (msg) { e.textContent = msg; e.hidden = false; } else e.hidden = true;
     const f = $('loginForm'); if (f.password) f.password.value = ''; paintTools();
   }
