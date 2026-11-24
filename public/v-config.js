@@ -40,7 +40,7 @@
               <li>Você pergunta em português, na tela <b>Assistente</b>, e ele consulta os dados atuais dos seus sistemas.</li>
               <li>Ele <b>só lê</b>: não renova, não cobra e não altera nada.</li>
               <li>O uso é cobrado na sua conta da Anthropic, por pergunta. Defina um limite de gasto mensal no console para ficar tranquilo.</li>
-              <li>Para perguntas simples, o modelo mais barato costuma bastar.</li>
+              <li>O Haiku 5.5 é o mais rápido e o mais barato: costuma custar menos de 1 centavo por pergunta e responde bem sobre os seus dados.</li>
             </ul></div></section>
         </div>
         <div class="grid g2e">
