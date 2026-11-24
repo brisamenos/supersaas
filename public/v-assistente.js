@@ -5,12 +5,15 @@
   const Sf = () => App.safira;
 
   function voiceOptions(sel) {
-    const vs = Sf().voices();
-    if (!vs.length) return html`<option value="">Nenhuma voz em português neste navegador</option>`;
+    const vs = Sf().voices(), prem = vs.filter(x => x.premium), brw = vs.filter(x => !x.premium);
     const cur = sel || (vs[0] && vs[0].id);
-    const grp = (label, list) => list.length ? html`<optgroup label="${label}">${list.map(x => html`<option value="${x.id}" ${x.id === cur ? 'selected' : ''}>${x.label}${x.natural ? ' (natural)' : ''}${x.br ? '' : ' • Portugal'}</option>`)}</optgroup>` : '';
-    return html`${grp('Vozes femininas', vs.filter(x => x.gender === 'f'))}${grp('Outras vozes', vs.filter(x => x.gender !== 'f' && x.gender !== 'm'))}${grp('Vozes masculinas', vs.filter(x => x.gender === 'm'))}`;
+    const opt = x => html`<option value="${x.id}" ${x.id === cur ? 'selected' : ''}>${x.label}${x.note ? ', ' + x.note : ''}${x.natural ? ' (natural)' : ''}${x.br ? '' : ' • Portugal'}</option>`;
+    const grp = (label, list) => list.length ? html`<optgroup label="${label}">${list.map(opt)}</optgroup>` : '';
+    return html`${prem.length ? html`${grp('Vozes premium (OpenAI) — femininas', prem.filter(x => x.gender === 'f'))}${grp('Vozes premium (OpenAI) — outras', prem.filter(x => x.gender !== 'f'))}` : html`<option value="" disabled>Vozes premium: coloque a chave da OpenAI em Configurações</option>`}
+      ${grp('Navegador — femininas', brw.filter(x => x.gender === 'f'))}${grp('Navegador — outras', brw.filter(x => x.gender !== 'f' && x.gender !== 'm'))}${grp('Navegador — masculinas', brw.filter(x => x.gender === 'm'))}
+      ${!vs.length ? html`<option value="">Nenhuma voz disponível neste navegador</option>` : ''}`;
   }
+  const isPremium = id => /^openai:/.test(id || '');
 
   function historyList() {
     const h = Sf().history; const pairs = [];
@@ -22,7 +25,8 @@
   App.views.assistente = {
     title: 'Safira',
     async render() {
-      const st = await App.get('/settings'); const ready = st.assistant.ready, P = Sf().prefs;
+      const st = await App.get('/settings'); Sf().setPremium(st.voice); const ready = st.assistant.ready, P = Sf().prefs;
+      if (!P.voice && st.voice.ready) P.voice = 'openai:marin';
       const canMic = Sf().SR, secure = window.isSecureContext;
       App.render(html`
         ${ready ? '' : html`<div class="panel chat-banner" style="margin-top:8px"><span class="badge warn">${icon('alert')}Falta ligar</span> A Safira precisa da chave da API do Claude para consultar seus sistemas. <button class="linkish" data-act="goto" data-tab="config">Colocar a chave agora</button></div>`}
@@ -35,10 +39,10 @@
         </section>
         <div class="grid g2e">
           <section class="panel"><div class="panel-head"><h2>Voz da Safira</h2></div><div class="panel-body">
-            <label class="field"><span>Voz</span><select id="safVoice">${voiceOptions(P.voice)}</select><small>As vozes vêm do navegador deste aparelho. No Microsoft Edge aparecem as mais naturais (Francisca e Thalita).</small></label>
+            <label class="field"><span>Voz</span><select id="safVoice">${voiceOptions(P.voice)}</select><small>${st.voice.ready ? 'As vozes premium soam iguais em qualquer computador ou celular.' : html`Para vozes premium (bem mais naturais), coloque a chave da OpenAI em <button class="linkish" data-act="goto" data-tab="config">Configurações</button>.`}</small></label>
             <div class="grid" style="grid-template-columns:1fr 1fr;gap:14px">
               <label class="field"><span>Velocidade <output id="safRateV">${P.rate.toFixed(2).replace('.', ',')}</output></span><input id="safRate" type="range" min="0.8" max="1.35" step="0.01" value="${P.rate}"></label>
-              <label class="field"><span>Tom <output id="safPitchV">${P.pitch.toFixed(2).replace('.', ',')}</output></span><input id="safPitch" type="range" min="0.7" max="1.4" step="0.01" value="${P.pitch}"></label>
+              <label class="field"><span title="O tom vale só para as vozes do navegador">Tom <output id="safPitchV">${P.pitch.toFixed(2).replace('.', ',')}</output></span><input id="safPitch" type="range" min="0.7" max="1.4" step="0.01" value="${P.pitch}" ${isPremium(P.voice) ? 'disabled' : ''}></label>
             </div>
             <div class="row"><button class="btn btn-primary" data-act="saf-test">${icon('speaker')}Ouvir esta voz</button></div>
           </div></section>
@@ -53,7 +57,7 @@
       const orb = Sf().Orb(document.getElementById('safMini'), true).start();
       App.cleanup.push(() => orb.stop());
       const $ = id => document.getElementById(id);
-      $('safVoice').addEventListener('change', e => { P.voice = e.target.value; Sf().test(P.voice); });
+      $('safVoice').addEventListener('change', e => { P.voice = e.target.value; $('safPitch').disabled = isPremium(P.voice); Sf().test(P.voice); });
       $('safRate').addEventListener('input', e => { P.rate = Number(e.target.value); $('safRateV').textContent = P.rate.toFixed(2).replace('.', ','); });
       $('safPitch').addEventListener('input', e => { P.pitch = Number(e.target.value); $('safPitchV').textContent = P.pitch.toFixed(2).replace('.', ','); });
       $('safRate').addEventListener('change', () => Sf().test(P.voice)); $('safPitch').addEventListener('change', () => Sf().test(P.voice));

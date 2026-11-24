@@ -9,7 +9,7 @@
     title: 'Configurações',
     async render() {
       const [st, us, msg, au] = await Promise.all([App.get('/settings'), App.get('/users'), App.get('/messages'), App.get('/audit')]);
-      const w = st.wuzapi, a = st.assistant;
+      const w = st.wuzapi, a = st.assistant, vo = st.voice;
       App.render(html`
         <div class="grid g2e" style="margin-top:8px">
           <section class="panel"><div class="panel-head"><h2>WhatsApp (WuzAPI)</h2>${w.ready ? html`<span class="badge good">${icon('check')}Ligado${w.instance_name ? ' • ' + w.instance_name : ''}</span>` : html`<span class="badge warn">${icon('alert')}Falta ligar</span>`}</div><div class="panel-body">
@@ -35,6 +35,14 @@
               <p class="form-error" role="alert" hidden></p>
               <div class="row"><button class="btn btn-primary admin-only" type="submit">Salvar</button><button class="btn admin-only" type="button" data-act="assist-test" ${a.ready ? '' : 'disabled'}>Testar conexão</button>${a.has_key ? html`<button class="btn btn-danger admin-only" type="button" data-act="assist-clear">Remover chave</button>` : ''}</div>
             </form></div></section>
+          <section class="panel"><div class="panel-head"><h2>Voz premium da Safira (OpenAI)</h2>${vo.ready ? html`<span class="badge good">${icon('check')}Ligada</span>` : html`<span class="badge warn">${icon('alert')}Falta a chave</span>`}</div><div class="panel-body">
+            <form data-form="voicekey">
+              <label class="field"><span>Chave da API da OpenAI</span><input name="openai_key" type="password" autocomplete="off" placeholder="${vo.has_key ? '•••••••• (já salva; preencha só para trocar)' : vo.key_from_env ? 'usando a chave configurada no servidor' : 'sk-…'}"><small>Você cria em platform.openai.com → API keys. Com ela, a Safira fala com vozes naturais (Marin, Coral, Nova…) em qualquer aparelho. Cada resposta falada custa poucos centavos.</small></label>
+              <p class="form-error" role="alert" hidden></p>
+              <div class="row"><button class="btn btn-primary admin-only" type="submit">Salvar</button><button class="btn admin-only" type="button" data-act="voice-test" ${vo.ready ? '' : 'disabled'}>${icon('speaker')}Ouvir a Safira</button>${vo.has_key ? html`<button class="btn btn-danger admin-only" type="button" data-act="voice-clear">Remover chave</button>` : ''}</div>
+            </form></div></section>
+        </div>
+        <div class="grid g2e">
           <section class="panel"><div class="panel-head"><h2>Como o assistente funciona</h2></div><div class="panel-body">
             <ul style="margin:0;padding-left:20px;line-height:1.7">
               <li>Você pergunta em português, na tela <b>Assistente</b>, e ele consulta os dados atuais dos seus sistemas.</li>
@@ -72,6 +80,9 @@
     const b = { assistant_model: d.assistant_model }; if (d.assistant_key) b.assistant_key = d.assistant_key;
     await App.put('/settings', b); App.toast('Assistente salvo.'); App.refresh();
   };
+  App.forms.voicekey = async d => { if (!d.openai_key) return App.toast('Cole a chave da OpenAI.', true); await App.put('/settings', { openai_key: d.openai_key }); App.toast('Voz premium salva.'); await App.refresh(); App.safira && App.safira.setPremium({ ready: true, voices: (await App.get('/settings')).voice.voices }); };
+  App.actions['voice-test'] = async (d, btn) => { await App.busy(btn, async () => { const st = await App.get('/settings'); App.safira.setPremium(st.voice); const P = App.safira.prefs; await App.safira.test(/^openai:/.test(P.voice) ? P.voice : 'openai:marin'); }); };
+  App.actions['voice-clear'] = async () => { if (!await App.confirm('Remover a chave da OpenAI?', 'A Safira volta a usar a voz do navegador.', 'Remover', true)) return; await App.put('/settings', { openai_key_clear: true }); App.safira && App.safira.setPremium(null); App.toast('Chave removida.'); App.refresh(); };
   App.actions['assist-test'] = async (d, btn) => { await App.busy(btn, async () => { const r = await App.post('/assistant/test'); App.toast('Conexão ok com ' + r.model + '.'); }); };
   App.actions['assist-clear'] = async () => { if (!await App.confirm('Remover a chave?', 'O assistente para de responder até você colocar outra chave.', 'Remover', true)) return; await App.put('/settings', { assistant_key_clear: true }); App.toast('Chave removida.'); App.refresh(); };
   App.actions['wuz-list'] = async (d, btn) => {

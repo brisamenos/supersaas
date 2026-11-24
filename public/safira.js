@@ -21,7 +21,11 @@
   // ---------- vozes ----------
   const FEM = /maria|francisca|thalita|luciana|fernanda|vit[oó]ria|camila|raquel|joana|helena|leila|brenda|elza|giovanna|let[ií]cia|manuela|yara|\bana\b|catarina|in[eê]s|female|feminin|mulher|google portugu[eê]s do brasil|google português/i;
   const MASC = /daniel|ant[oô]nio|donato|f[aá]bio|humberto|j[uú]lio|nicolau|val[eé]rio|duarte|felipe|male\b|masculin|reed|eddy|rocko|grandpa|jo[aã]o/i;
-  function voices() {
+  let premium = { ready: false, voices: [] };
+  const premiumList = () => premium.ready ? premium.voices.map(x => ({ id: 'openai:' + x.id, label: x.label, note: x.note, gender: x.gender, premium: true, br: true })) : [];
+  const selectedPremium = (id) => { const v = id !== undefined ? id : (prefs.voice || (premium.ready ? 'openai:marin' : '')); return premium.ready && /^openai:/.test(v) ? v.slice(7) : null; };
+  function voices() { return premiumList().concat(browserVoices()); }
+  function browserVoices() {
     if (!TTS) return [];
     return speechSynthesis.getVoices().filter(v => /^pt/i.test(v.lang)).map(v => {
       const female = FEM.test(v.name) && !/male\b/i.test(v.name.replace(/female/i, '')), male = !female && MASC.test(v.name);
@@ -31,7 +35,7 @@
       return { v, id: v.voiceURI || v.name, label, gender: female ? 'f' : male ? 'm' : '', br: /pt[-_]BR/i.test(v.lang), natural, score: (/pt[-_]BR/i.test(v.lang) ? 100 : 0) + (female ? 50 : 0) + (natural ? 30 : 0) + (google ? 12 : 0) + (v.localService ? 0 : 3) };
     }).sort((a, b) => b.score - a.score);
   }
-  function currentVoice() { const vs = voices(); return (vs.find(x => x.id === prefs.voice) || vs[0] || {}).v || null; }
+  function currentVoice() { const vs = browserVoices(); return (vs.find(x => x.id === prefs.voice) || vs[0] || {}).v || null; }
   if (TTS) speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', () => App.safira && App.safira.onVoices && App.safira.onVoices());
 
   // ---------- texto -> fala natural ----------
@@ -53,8 +57,63 @@
     if (cur) out.push(cur); return out;
   }
 
-  let speakToken = 0, speechBlocked = false, voiceBroken = '', keep = [];
+  let speakToken = 0, speechBlocked = false, voiceBroken = '', keep = [], premiumWarned = false;
   function speak(text, opt = {}) {
+    const pv = opt.premium !== undefined ? opt.premium : selectedPremium();
+    if (pv) {
+      const my = speakToken + 1;
+      return speakPremium(text, pv, opt.rate || prefs.rate).catch(e => {
+        if (e && e.name === 'AbortError') return;
+        if (e && e.blocked) { speechBlocked = true; return; }
+        if (my < speakToken) return; // foi interrompida de propósito
+        if (!premiumWarned || opt.premium) { premiumWarned = true; App.toast((e && e.message ? e.message : 'A voz premium falhou.') + ' Usando a voz do navegador.', true); }
+        return speakBrowser(text, opt);
+      });
+    }
+    return speakBrowser(text, opt);
+  }
+
+  // ---------- voz premium (OpenAI, gerada no servidor) ----------
+  let actx = null, cur = null; // cur = { audio, an, buf, ctl }
+  function audioCtx() { if (actx) return actx; try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { actx = null; } return actx; }
+  function premiumLevel() {
+    if (!cur || !cur.an || cur.audio.paused) return 0;
+    cur.an.getByteTimeDomainData(cur.buf); let x = 0; for (let i = 0; i < cur.buf.length; i++) { const v = (cur.buf[i] - 128) / 128; x += v * v; } return Math.sqrt(x / cur.buf.length);
+  }
+  function premiumParts(t) { // primeira frase sozinha (começa a falar mais rápido), o resto em blocos maiores
+    const sents = toSpeech(t).split(/(?<=[.!?;])\s+/).filter(Boolean); const out = []; let acc = '';
+    for (const x of sents) { const lim = out.length ? 420 : 150; if (acc && (acc + ' ' + x).length > lim) { out.push(acc); acc = x; } else acc = acc ? acc + ' ' + x : x; }
+    if (acc) out.push(acc); return out.slice(0, 6);
+  }
+  async function fetchSpeech(text, voice, signal) {
+    const r = await fetch('/api/assistant/speech', { method: 'POST', signal, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (App.token || '') }, body: JSON.stringify({ text, voice }) });
+    if (!r.ok) { let m = 'A voz premium falhou.'; try { m = (await r.json()).error || m; } catch (_) { /* ok */ } throw new Error(m); }
+    return URL.createObjectURL(await r.blob());
+  }
+  async function speakPremium(text, voice, rate) {
+    stopAudio(); if (TTS && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel();
+    const my = ++speakToken, ctl = new AbortController(); const parts = premiumParts(text); if (!parts.length) return;
+    const ac = audioCtx(); if (ac && ac.state !== 'running') { try { await ac.resume(); } catch (_) { /* ok */ } }
+    const urls = parts.map(p => fetchSpeech(p, voice, ctl.signal)); urls.forEach(u => u.catch(() => {}));
+    cur = { ctl }; const urlsMade = [];
+    try {
+      for (const pu of urls) {
+        const url = await pu; urlsMade.push(url); if (my !== speakToken) return;
+        const audio = new Audio(); audio.src = url; audio.playbackRate = rate || 1; audio.preservesPitch = true;
+        let an = null, buf = null;
+        if (ac && ac.state === 'running') { try { const src = ac.createMediaElementSource(audio); an = ac.createAnalyser(); an.fftSize = 512; src.connect(an); an.connect(ac.destination); buf = new Uint8Array(an.fftSize); } catch (_) { an = null; } }
+        cur = { audio, an, buf, ctl };
+        await new Promise((res, rej) => {
+          audio.onended = res; audio.onerror = () => rej(new Error('Não consegui tocar o áudio da voz.')); audio.onpause = () => { if (my !== speakToken) res(); };
+          audio.play().then(() => orbKick(0.4)).catch(e => { if (e && e.name === 'NotAllowedError') { const b = new Error('blocked'); b.blocked = true; rej(b); } else rej(e); });
+        });
+        if (my !== speakToken) return;
+      }
+    } finally { setTimeout(() => urlsMade.forEach(u => URL.revokeObjectURL(u)), 1500); if (cur && cur.ctl === ctl) cur = null; }
+  }
+  function stopAudio() { if (!cur) return; try { cur.ctl && cur.ctl.abort(); } catch (_) { /* ok */ } try { cur.audio && cur.audio.pause(); } catch (_) { /* ok */ } cur = null; }
+
+  function speakBrowser(text, opt = {}) {
     return new Promise(resolve => {
       if (!TTS) return resolve();
       const parts = chunks(toSpeech(text)); if (!parts.length) return resolve();
@@ -84,7 +143,7 @@
       setTimeout(next, 90);
     });
   }
-  function stopSpeaking() { speakToken++; if (TTS) speechSynthesis.cancel(); }
+  function stopSpeaking() { speakToken++; stopAudio(); if (TTS) speechSynthesis.cancel(); }
 
   // ---------- globo ----------
   const orbs = new Set();
@@ -103,7 +162,7 @@
       let tg = 0.07 + 0.03 * Math.sin(t * 1.5);
       if (state === 'listening') tg = 0.13 + Math.min(ext * 2.4, 0.75);
       else if (state === 'thinking') tg = 0.24 + 0.07 * Math.sin(t * 6);
-      else if (state === 'speaking') tg = 0.3 + 0.22 * Math.abs(Math.sin(t * 7.1) * Math.sin(t * 2.9 + 1)) + kick;
+      else if (state === 'speaking') tg = ext > 0.004 ? 0.26 + Math.min(ext * 3.4, 0.8) + kick * 0.3 : 0.3 + 0.22 * Math.abs(Math.sin(t * 7.1) * Math.sin(t * 2.9 + 1)) + kick;
       kick *= Math.pow(0.04, dt); level += (tg - level) * Math.min(1, dt * 9); hue += ((HUE[state] || 212) - hue) * Math.min(1, dt * 2.5);
       spin += dt * (state === 'thinking' ? 1.15 : state === 'speaking' ? 0.45 : 0.22);
       const cx = w / 2, cy = h * (mini ? 0.4 : 0.43), R = Math.min(w, h) * (mini ? 0.2 : 0.165) * (1 + level * 0.1);
@@ -234,16 +293,19 @@
       <button class="saf-orb-hit" type="button" aria-label="Tocar no globo: falar com a Safira ou interromper"></button>
       <div class="saf-top"><span class="saf-name">Safira</span><button class="saf-x" type="button" aria-label="Fechar a Safira">${icon('x').s}</button></div>
       <div class="saf-cap" aria-live="polite"><p class="saf-state"></p><p class="saf-you"></p><p class="saf-say"></p></div>
+      <div class="saf-confirm" hidden><p class="saf-sum"></p><pre class="saf-detail"></pre><div class="saf-confirm-row"><button type="button" class="saf-yes">Confirmar</button><button type="button" class="saf-no">Cancelar</button></div><p class="saf-hint">Ou diga “sim” ou “não”.</p></div>
       <form class="saf-type" autocomplete="off"><label class="sr" for="safIn">Digitar pergunta para a Safira</label><input id="safIn" maxlength="600" placeholder="Prefere digitar? Escreva aqui"><button type="submit" aria-label="Enviar pergunta">${icon('send').s}</button></form>`;
     document.body.appendChild(ov);
     bigOrb = Orb(ov.querySelector('.saf-cv'), false);
-    bigOrb.setInput(() => (mic && phase === 'listening') ? mic.read() : 0);
+    bigOrb.setInput(() => (mic && phase === 'listening') ? mic.read() : (phase === 'speaking' || phase === 'greet') ? premiumLevel() : 0);
     ov.querySelector('.saf-x').addEventListener('click', () => close());
     ov.querySelector('.saf-orb-hit').addEventListener('click', () => {
       if (phase === 'speaking' || phase === 'greet') { stopSpeaking(); listen(); }
       else if (phase === 'idle') listen();
     });
     ov.querySelector('.saf-type').addEventListener('submit', e => { e.preventDefault(); const i = ov.querySelector('#safIn'); const q = i.value.trim(); if (!q) return; i.value = ''; killRec(); stopSpeaking(); ask(q, false); });
+    ov.querySelector('.saf-yes').addEventListener('click', () => { killRec(); stopSpeaking(); decide(true, 'Confirmar'); });
+    ov.querySelector('.saf-no').addEventListener('click', () => { killRec(); stopSpeaking(); decide(false, 'Cancelar'); });
     ov.addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); close(); } });
     return ov;
   }
@@ -252,6 +314,7 @@
     phase = p; if (!ov) return; bigOrb.setState(p === 'greet' ? 'speaking' : p);
     ov.dataset.phase = p; ov.querySelector('.saf-state').textContent = STATE_TXT[p] || '';
   }
+  function resetCard() { if (!ov) return; const box = ov.querySelector('.saf-confirm'); box.hidden = true; ov.querySelector('.saf-confirm-row').hidden = false; ov.querySelector('.saf-hint').hidden = false; ov.classList.remove('confirming'); }
   function caption(you, say) { if (!ov) return; if (you !== undefined) ov.querySelector('.saf-you').textContent = you; if (say !== undefined) ov.querySelector('.saf-say').textContent = say; }
 
   function open(after) {
@@ -270,6 +333,8 @@
   }
   function close() {
     if (!ov || ov.hidden) return; stopSpeaking(); killRec(); micOff(); busy = false;
+    if (pendingAct) { const id = pendingAct.id; pendingAct = null; App.post('/assistant/confirm', { id, cancel: true }).catch(() => {}); }
+    resetCard();
     ov.classList.remove('on'); setTimeout(() => { if (!ov.classList.contains('on')) { ov.hidden = true; bigOrb.stop(); } }, 260);
     mode = 'off'; phase = 'idle'; setTimeout(startWake, 500);
   }
@@ -277,7 +342,7 @@
   function listen() {
     if (mode !== 'open') return;
     if (!canListen()) { setPhase('idle'); caption('', !SR ? 'Este navegador não entende voz. Use o Google Chrome ou o Microsoft Edge. Você pode digitar abaixo.' : 'O microfone só funciona com o endereço em https://. Você pode digitar abaixo.'); return; }
-    killRec(); setPhase('listening'); caption('', ''); micOn();
+    killRec(); setPhase('listening'); caption(''); micOn(); // a última resposta continua na tela enquanto ela ouve
     const r = new SR(); rec = r; r.lang = 'pt-BR'; r.continuous = false; r.interimResults = true; r.maxAlternatives = 1;
     let fin = '', interim = '';
     r.onresult = e => { interim = ''; for (let i = e.resultIndex; i < e.results.length; i++) { const x = e.results[i]; if (x.isFinal) fin += x[0].transcript; else interim += x[0].transcript; } caption((fin + interim).trim()); };
@@ -290,14 +355,41 @@
       if (rec !== r) return; rec = null;
       const q = (fin || interim).trim();
       if (q) return ask(q, true);
+      if (pendingAct) { setPhase('idle'); return; } // esperando o sim/não: não fecha
       close(); // silêncio: fecha e volta a esperar "Olá, Safira"
     };
     try { r.start(); } catch (_) { rec = null; setPhase('idle'); }
   }
 
+  // ---------- ações que esperam o "sim" ----------
+  let pendingAct = null;
+  const YES = /^(sim|s|pode|pode sim|pode fazer|pode ir|pode mandar|pode enviar|pode renovar|pode confirmar|confirmo|confirma|confirmado|confirmar|isso|isso mesmo|ok|okay|beleza|manda|manda ver|faz|faca|faz isso|fechado|positivo|claro|com certeza|correto|certo|sim pode|sim confirmo|sim por favor|por favor|bora|vai)( safira)?$/;
+  const NO = /^(nao|n|nao pode|nao faz|nao faca|nao quero|nao precisa|cancela|cancelar|cancelado|deixa|deixa pra la|esquece|melhor nao|para|pare|negativo|nada)( safira)?$/;
+  function showConfirm(p) {
+    pendingAct = p; if (!ov) return; const box = ov.querySelector('.saf-confirm');
+    box.hidden = !p; ov.querySelector('.saf-sum').textContent = p ? p.summary + ' Posso fazer?' : ''; ov.querySelector('.saf-detail').textContent = p && p.detail ? p.detail : ''; ov.querySelector('.saf-detail').hidden = !(p && p.detail);
+    ov.classList.toggle('confirming', !!p);
+  }
+  async function decide(yes, said) {
+    const p = pendingAct; if (!p || busy) return; busy = true; showConfirm(null);
+    caption(said, ''); setPhase('thinking'); ctxMsgs.push({ role: 'user', content: said }); saveCtx();
+    let reply, detail = null, ok = true;
+    try { const r = await App.post('/assistant/confirm', { id: p.id, cancel: !yes }); reply = r.reply; detail = r.detail || null; }
+    catch (e) { reply = e.message; ok = false; }
+    ctxMsgs.push({ role: 'assistant', content: reply }); ctxAt = Date.now(); saveCtx();
+    busy = false; if (mode !== 'open') return;
+    setPhase('speaking'); caption(said, reply);
+    if (detail) { const box = ov.querySelector('.saf-confirm'); box.hidden = false; ov.querySelector('.saf-sum').textContent = reply; ov.querySelector('.saf-detail').hidden = false; ov.querySelector('.saf-detail').textContent = detail; ov.querySelector('.saf-confirm-row').hidden = true; ov.querySelector('.saf-hint').hidden = true; ov.classList.add('confirming'); }
+    await speak(reply); if (mode !== 'open' || phase !== 'speaking') return;
+    if (ok || !yes) listen(); else setPhase('idle');
+  }
+
   async function ask(q, spoken) {
-    if (busy) return; busy = true;
-    caption(q, ''); const nq = norm(q).replace(/\bsafira\b/g, '').trim();
+    if (busy) return;
+    const nq0 = norm(q).replace(/\bsafira\b/g, '').trim();
+    if (pendingAct) { if (YES.test(nq0)) return decide(true, q); if (NO.test(nq0)) return decide(false, q); showConfirm(null); } // outra coisa: a ação pendente é descartada
+    busy = true; resetCard();
+    caption(q, ''); const nq = nq0;
     if (spoken && FAREWELL.test(nq)) { busy = false; const b = goodbye(); setPhase('speaking'); caption(q, b); await speak(b); return close(); }
     setPhase('thinking');
     ctxMsgs.push({ role: 'user', content: q }); ctxAt = Date.now(); saveCtx();
@@ -305,6 +397,7 @@
     try {
       const r = await App.post('/assistant', { voice: true, name: prefs.name, messages: ctxMsgs.slice(-16) });
       reply = r.reply; ctxMsgs.push({ role: 'assistant', content: reply, used: r.used }); saveCtx();
+      if (r.pending) showConfirm(r.pending);
     } catch (e) {
       failed = true; ctxMsgs.pop(); saveCtx();
       reply = /ainda não está ligado/.test(e.message) ? 'Ainda não estou ligada. Coloque a chave da API do Claude em Configurações, na parte do assistente.' : e.message;
@@ -334,16 +427,18 @@
   }
 
   App.safira = {
-    Orb, voices, currentVoice, prefs, speak, stopSpeaking, toSpeech, greeting, TTS, SR: !!SR, canListen,
+    Orb, voices, currentVoice, prefs, get premium() { return premium; }, setPremium(v) { premium = v && v.ready ? { ready: true, voices: v.voices || [] } : { ready: false, voices: [] }; }, speak, stopSpeaking, toSpeech, greeting, TTS, SR: !!SR, canListen,
     get mode() { return mode; }, get history() { return ctxMsgs.slice(); },
     clearHistory() { ctxMsgs = []; saveCtx(); },
     open: () => open(''), close,
-    start() { mountTop(); startWake(); },
+    start() { mountTop(); startWake(); App.get('/settings').then(st => App.safira.setPremium(st.voice)).catch(() => {}); },
     stop() { close(); stopWake(); mode = 'off'; },
     setWake(on) { prefs.wake = on; if (on) startWake(); else stopWake(); },
     test(voiceId, rate, pitch) {
-      const v = voices().find(x => x.id === voiceId); voiceBroken = ''; speechBlocked = false;
-      return speak(greeting(), { voice: v && v.v, rate, pitch }).then(() => {
+      voiceBroken = ''; speechBlocked = false;
+      const pv = selectedPremium(voiceId || '');
+      const v = pv ? null : browserVoices().find(x => x.id === voiceId);
+      return speak(greeting(), { premium: pv || null, voice: v && v.v, rate, pitch }).then(() => {
         if (speechBlocked) App.toast('O navegador bloqueou o som. Clique uma vez na página e tente de novo.', true);
         else if (voiceBroken) App.toast('A voz “' + (v ? v.label : voiceBroken) + '” não funcionou neste navegador. Usei a voz padrão; escolha outra na lista.', true);
       });

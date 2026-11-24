@@ -60,7 +60,9 @@ Em **Configurações**:
 
 ## Passo 5 — Ligar a Safira (assistente de voz)
 
-A Safira responde por voz qualquer pergunta sobre os seus sistemas: quem vence hoje, próximos vencimentos, atrasados, quanto entrou no mês, movimento, funil e quedas. Ela só consulta; não altera nada.
+A Safira responde por voz qualquer pergunta sobre os seus sistemas (quem vence hoje, próximos vencimentos, atrasados, quanto entrou no mês, movimento, funil, quedas) e também **age**: renova, suspende, reativa, manda cobrança (para um cliente ou para todos os vencidos), manda mensagem, troca senha, cria acesso, lança no financeiro, envia relatório e move contatos no funil.
+
+**Segurança das ações:** ela nunca executa direto. Antes, confere tudo no banco e diz exatamente o que vai fazer (ex.: "o vencimento passa de 25/11/2026 para 25/12/2026, lanço R$ 99,90 e aviso no WhatsApp. Posso fazer?"). Só depois do seu **"sim"** (ou do botão Confirmar) a ação acontece. "Não", fechar a janela ou mudar de assunto cancelam. Se o nome do cliente for ambíguo ou não existir, ela pergunta em vez de chutar. Só administradores podem mandar ela agir; quem só visualiza pode apenas perguntar. Tudo fica no Registro de ações como "(pela Safira)".
 
 1. Crie uma chave em **console.anthropic.com → API Keys** (o uso é cobrado na sua conta da Anthropic, por pergunta; defina um limite de gasto mensal lá).
 2. Na central, vá em **Configurações → Assistente (IA)**, cole a chave, clique em **Salvar** e depois em **Testar conexão**.
@@ -71,9 +73,13 @@ A Safira responde por voz qualquer pergunta sobre os seus sistemas: quem vence h
 4. Pronto: com o sistema aberto, diga **"Olá, Safira"**. Ela cumprimenta, ouve a pergunta e responde falando. Pode emendar outra pergunta logo depois. Para encerrar, fique em silêncio ou diga "obrigado".
    Também dá para chamar pelo botão **Safira** no topo da tela, ou falar tudo de uma vez: "Safira, quem vence hoje?".
 
+**Voz premium (opcional, recomendado):** em **Configurações → Voz premium da Safira (OpenAI)** cole uma chave da OpenAI (platform.openai.com → API keys, com saldo). Aí a Safira fala com vozes naturais (Marin, Coral, Nova, Shimmer, Sage…) igual em qualquer computador ou celular, e o globo reage à voz dela. Escolha a voz na tela **Safira**. Cada resposta custa poucos centavos; frases repetidas (cumprimentos) não são cobradas de novo. Se a OpenAI falhar, ela usa a voz do navegador automaticamente.
+Observação: a OpenAI anunciou que o modelo de voz atual (gpt-4o-mini-tts) será desligado em 06/01/2027. Quando sair o substituto, basta definir a variável `TTS_MODEL` com o novo nome (ou atualizar o SuperSaaS).
+
 Importante:
 - O microfone **só funciona com endereço https://** (o domínio do EasyPanel já é https). Por IP sem https o navegador bloqueia.
-- Use **Google Chrome** ou **Microsoft Edge** no computador. As vozes vêm do navegador: no Edge aparecem as mais naturais (Francisca e Thalita).
+- Use **Google Chrome** ou **Microsoft Edge** no computador. Sem a voz premium, as vozes vêm do navegador: no Edge aparecem as mais naturais (Francisca e Thalita). No **Linux**, o Chrome não tem voz em português: use o Edge ou a voz premium.
+- Dica: no Edge, menu ⋯ → Aplicativos → **Instalar este site como aplicativo** deixa o SuperSaaS com ícone e janela própria.
 - A voz, o nome e a ativação ficam guardados **em cada aparelho** (configure de novo se abrir em outro computador).
 - No celular funciona tocando no botão Safira; deixar ouvindo "Olá, Safira" o tempo todo funciona melhor no computador.
 
@@ -96,6 +102,8 @@ Importante:
 | `WUZAPI_URL`, `WUZAPI_ADMIN_TOKEN` | Valores iniciais da WuzAPI (dá para configurar pela tela) |
 | `ANTHROPIC_API_KEY` | Chave da Safira (opcional: dá para colar pela tela) |
 | `ASSISTANT_MODEL` | Modelo da Safira (opcional: dá para escolher pela tela) |
+| `OPENAI_API_KEY` | Chave da voz premium (opcional: dá para colar pela tela) |
+| `TTS_MODEL` | Modelo de voz da OpenAI (padrão `gpt-4o-mini-tts`) |
 | `DB_PATH` | Troca o local do banco (padrão `/app/data/supersaas.db`) |
 
 ## Adicionar outro sistema no futuro
