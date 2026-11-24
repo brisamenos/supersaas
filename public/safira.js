@@ -387,8 +387,16 @@
 
   // ---------- ações que esperam o "sim" ----------
   let pendingAct = null;
-  const YES = /^(sim|s|pode|pode sim|pode fazer|pode ir|pode mandar|pode enviar|pode renovar|pode confirmar|confirmo|confirma|confirmado|confirmar|isso|isso mesmo|ok|okay|beleza|manda|manda ver|faz|faca|faz isso|fechado|positivo|claro|com certeza|correto|certo|sim pode|sim confirmo|sim por favor|por favor|bora|vai)( safira)?$/;
-  const NO = /^(nao|n|nao pode|nao faz|nao faca|nao quero|nao precisa|cancela|cancelar|cancelado|deixa|deixa pra la|esquece|melhor nao|para|pare|negativo|nada)( safira)?$/;
+  // "sim" pode vir de muitos jeitos: "sim", "pode suspender", "sim, renova", "manda ver", "suspende"...
+  const YES_START = /^(sim|s|pode|podes|confirm\w*|isso|ok|okay|beleza|manda|faz|faca|fechado|positivo|claro|com certeza|correto|certo|bora|vai|perfeito|exato|exatamente|autorizo|autorizado|aprovado|segue|prossiga|continua)\b/;
+  const NEG = /\b(nao|n|cancel\w*|espera|aguarda|mas|so que|porem|troca|muda|errad\w*|outro|outra|deixa|esquece|para|pare)\b/;
+  const NO = /^(nao|n|cancela|cancelar|cancelado|deixa|esquece|melhor nao|para|pare|negativo|nada|espera|aguarda)\b/;
+  function isYes(t, p) {
+    if (!t || NEG.test(t) || t.split(' ').length > 7) return false;
+    if (YES_START.test(t)) return true;
+    // só o verbo da ação ("suspende", "pode suspender", "suspende sim"), no máximo 3 palavras
+    return !!(p && p.verb && t.split(' ').length <= 3 && new RegExp('^(' + p.verb + ')').test(t));
+  }
   function showConfirm(p) {
     pendingAct = p; if (!ov) return; const box = ov.querySelector('.saf-confirm');
     box.hidden = !p; ov.querySelector('.saf-sum').textContent = p ? p.summary + ' Posso fazer?' : ''; ov.querySelector('.saf-detail').textContent = p && p.detail ? p.detail : ''; ov.querySelector('.saf-detail').hidden = !(p && p.detail);
@@ -411,7 +419,7 @@
   async function ask(q, spoken) {
     if (busy) return;
     const nq0 = norm(q).replace(/\bsafira\b/g, '').trim();
-    if (pendingAct) { if (YES.test(nq0)) return decide(true, q); if (NO.test(nq0)) return decide(false, q); showConfirm(null); } // outra coisa: a ação pendente é descartada
+    if (pendingAct) { if (NO.test(nq0)) return decide(false, q); if (isYes(nq0, pendingAct)) return decide(true, q); showConfirm(null); } // outra coisa: a ação pendente é descartada
     busy = true; resetCard();
     caption(q, ''); const nq = nq0;
     if (spoken && FAREWELL.test(nq)) { busy = false; const b = goodbye(); setPhase('speaking'); caption(q, b); await speak(b); return close(); }
