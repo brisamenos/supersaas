@@ -11,7 +11,7 @@
   function row(c) {
     return html`<div class="lrow cl click" data-act="client-open" data-sys="${c.system_id}" data-ext="${c.ext_id}" role="button" tabindex="0" aria-label="Abrir ${c.name}">
       <div class="main-cell"><b>${c.name}</b><small>${c.email || F.phone(c.phone) || 'sem contato'}</small></div>
-      <div class="c-sys row" style="gap:8px;flex-wrap:nowrap"><span class="swatch" style="background:${App.sysColor(c.system_kind)};height:18px;width:8px"></span><span class="small">${c.system_name}</span></div>
+      <div class="c-sys row" style="gap:8px;flex-wrap:nowrap">${App.sysTile(c.system_kind, 'xs')}<span class="small">${c.system_name}</span></div>
       <div class="c-hide">${c.price ? F.brl(c.price) : html`<span class="muted">—</span>`}<small class="muted" style="display:block">${c.plan || ''}</small></div>
       <div>${App.stateBadge(c.state, c.days_left)}<small class="muted" style="display:block;margin-top:2px">${c.expires_at ? 'até ' + F.date(c.expires_at) : ''}</small></div>
       <div class="c-hide small"><b style="font-weight:600">${F.int(c.activity_month)}</b> ${c.unit}<small class="muted" style="display:block">${c.last_activity ? 'visto ' + F.ago(c.last_activity) : 'sem movimento'}</small></div>

@@ -19,23 +19,36 @@
 
 <!-- Entrada -->
 <section id="login" class="login" hidden>
-  <div class="login-card">
-    <div class="brand brand-lg"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8"/><path d="M4 17h6l3-8 5 14 3-6h7"/></svg><span>SuperSaaS</span></div>
-    <h1>Entrar na central</h1>
-    <p class="muted">Todos os seus sistemas, clientes e números em um só lugar.</p>
-    <form id="loginForm" autocomplete="on">
-      <label class="field"><span>E-mail</span><input name="email" type="email" required autocomplete="username" autofocus></label>
-      <label class="field"><span>Senha</span><input name="password" type="password" required autocomplete="current-password"></label>
-      <p id="loginError" class="form-error" role="alert" hidden></p>
-      <button class="btn btn-primary btn-block" type="submit">Entrar</button>
-    </form>
+  <div class="login-art">
+    <div class="brand brand-lg"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M4 17h6l3-8 5 14 3-6h7"/></svg><span class="brand-txt">SuperSaaS<small>Central de comando</small></span></div>
+    <div class="login-pitch">
+      <h2>Todos os seus sistemas, clientes e números em um só lugar.</h2>
+      <ul class="login-points">
+        <li><span data-ico="hard-pulse"></span><span><b>Saúde de cada sistema</b> conferida a cada 30 segundos, com aviso no WhatsApp se algo cair.</span></li>
+        <li><span data-ico="money"></span><span><b>Receita, vencimentos e cobranças</b> de todos os produtos, sem abrir um por um.</span></li>
+        <li><span data-ico="assistente"></span><span><b>Safira, sua assistente de voz,</b> responde e age por você com um simples "Olá, Safira".</span></li>
+      </ul>
+    </div>
+    <svg class="login-pulse" viewBox="0 0 800 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 38H330l16-24 20 40 18-34 12 18H800"/></svg>
+  </div>
+  <div class="login-pane">
+    <div class="login-card">
+      <h1>Entrar na central</h1>
+      <p class="muted">Use o e-mail e a senha de acesso da sua equipe.</p>
+      <form id="loginForm" autocomplete="on">
+        <label class="field"><span>E-mail</span><input name="email" type="email" required autocomplete="username" autofocus></label>
+        <label class="field"><span>Senha</span><input name="password" type="password" required autocomplete="current-password"></label>
+        <p id="loginError" class="form-error" role="alert" hidden></p>
+        <button class="btn btn-primary btn-block btn-lg" type="submit">Entrar</button>
+      </form>
+    </div>
   </div>
 </section>
 
 <!-- Aplicativo -->
 <div id="app" class="app" hidden>
   <aside class="side" aria-label="Menu principal">
-    <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8"/><path d="M4 17h6l3-8 5 14 3-6h7"/></svg><span>SuperSaaS</span></div>
+    <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M4 17h6l3-8 5 14 3-6h7"/></svg><span class="brand-txt">SuperSaaS<small>Central de comando</small></span></div>
     <nav id="nav" class="nav"></nav>
     <div class="side-foot">
       <div id="who" class="who"></div>
@@ -48,7 +61,7 @@
 
   <div class="stage">
     <header class="top">
-      <h1 id="pageTitle" tabindex="-1">Painel</h1>
+      <div class="top-title"><h1 id="pageTitle" tabindex="-1">Painel</h1><p id="pageSub" class="top-sub"></p></div>
       <div class="row" style="gap:8px">
         <div id="live" class="live" role="status" aria-live="polite"><i class="live-dot"></i><span>Conectando…</span></div>
         <div class="top-tools">

@@ -51,7 +51,7 @@
         </div>
         <div class="grid g2e">
           <section class="panel"><div class="panel-head"><h2>Em atraso</h2><span class="hint">${F.brl0(d.late_total)} por mês parados</span></div><div class="panel-body">
-            ${d.late.length ? d.late.map(c => clientLine(c, true)) : html`<p class="muted small">Ninguém em atraso. 🎉</p>`}</div></section>
+            ${d.late.length ? d.late.map(c => clientLine(c, true)) : html`<p class="muted small">Ninguém em atraso.</p>`}</div></section>
           <section class="panel"><div class="panel-head"><h2>Vencem nos próximos 7 dias</h2><span class="hint">${F.brl0(d.due7_total)} a receber</span></div><div class="panel-body">
             ${d.due7.length ? d.due7.map(c => clientLine(c, false)) : html`<p class="muted small">Nenhum vencimento nesta semana. Em 30 dias: ${d.due30.length} cliente${d.due30.length === 1 ? '' : 's'} (${F.brl0(d.due30_total)}).</p>`}</div></section>
         </div>

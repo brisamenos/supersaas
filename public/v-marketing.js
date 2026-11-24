@@ -26,10 +26,10 @@
     const [ins, pb] = await Promise.all([App.get('/marketing/insights'), App.get('/marketing/playbooks')]);
     return html`
       <section class="panel"><div class="panel-head"><h2>O que os seus números sugerem</h2><span class="hint">atualiza sozinho com os dados dos sistemas</span></div><div class="panel-body">
-        ${ins.insights.length ? ins.insights.map(i => html`<div class="alert ${i.level}"><span class="ico" aria-hidden="true">${i.icon}</span><div><h3>${i.title}</h3><p>${i.detail}</p></div>${i.action ? html`<button class="btn btn-sm" data-act="insight-go" data-tab="${i.action.tab}" data-segment="${i.action.segment || ''}">${i.action.label}</button>` : ''}</div>`) : html`<p class="muted">Sem sugestões por enquanto. Conecte sistemas e aguarde alguns dias de dados.</p>`}
+        ${ins.insights.length ? ins.insights.map(i => html`<div class="alert ${i.level}"><span class="ico">${icon(i.icon)}</span><div><h3>${i.title}</h3><p>${i.detail}</p></div>${i.action ? html`<button class="btn btn-sm" data-act="insight-go" data-tab="${i.action.tab}" data-segment="${i.action.segment || ''}">${i.action.label}</button>` : ''}</div>`) : html`<p class="muted">Sem sugestões por enquanto. Conecte sistemas e aguarde alguns dias de dados.</p>`}
       </div></section>
       <h2 class="section-title">Estratégias prontas para usar</h2>
-      <div class="grid g2e" style="margin-top:0">${pb.playbooks.map(p => html`<section class="panel"><div class="panel-head"><h2><span aria-hidden="true">${p.icon}</span> ${p.title}</h2></div><div class="panel-body">
+      <div class="grid g2e" style="margin-top:0">${pb.playbooks.map(p => html`<section class="panel"><div class="panel-head"><h2 class="pb-title"><span class="pb-ico">${icon(p.icon)}</span>${p.title}</h2></div><div class="panel-body">
         <p class="muted" style="margin-bottom:10px">${p.goal}</p>
         <ul style="margin:0 0 14px;padding-left:20px">${p.steps.map(s => html`<li style="margin-bottom:3px">${s}</li>`)}</ul>
         <div class="wa">${App.waFormat(p.message)}</div>

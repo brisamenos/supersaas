@@ -19,9 +19,14 @@
   App.fail = e => { if (e && e.name === 'AbortNav') return; App.toast(e && e.message ? e.message : String(e), true); };
 
   // ---------- menu ----------
+  // menu em grupos: o que é o negócio, o que faz crescer, o que mantém tudo rodando
+  const GROUPS = [['Negócio', ['painel', 'clientes', 'financeiro', 'relatorios']], ['Crescimento', ['marketing', 'assistente']], ['Operação', ['sistemas', 'config']]];
   function buildNav() {
-    $('nav').innerHTML = NAV.map(([k, l]) => `<a href="#/${k}" data-tab="${k}">${icon(k === 'config' ? 'config' : k).s}<span>${l}</span><span class="count" hidden></span></a>`).join('');
+    const label = Object.fromEntries(NAV);
+    $('nav').innerHTML = GROUPS.map(([g, keys]) => `<div class="nav-group"><span class="nav-cap">${g}</span>` + keys.map(k => `<a href="#/${k}" data-tab="${k}">${icon(k).s}<span>${label[k]}</span><span class="count" hidden></span></a>`).join('') + '</div>').join('');
   }
+  const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const today = () => { const t = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Fortaleza' }); return t.charAt(0).toUpperCase() + t.slice(1); };
   App.setBadge = (tab, n) => { const el = document.querySelector(`#nav [data-tab="${tab}"] .count`); if (!el) return; el.hidden = !n; el.textContent = n > 99 ? '99+' : n; el.setAttribute('aria-label', `${n} pendente${n === 1 ? '' : 's'}`); };
   App.go = tab => { if (location.hash === '#/' + tab) App.refresh(); else location.hash = '#/' + tab; };
 
@@ -31,6 +36,7 @@
     App.current = tab;
     document.querySelectorAll('#nav a').forEach(a => { if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     $('pageTitle').textContent = view.title; document.title = view.title + ' • SuperSaaS';
+    const sub = $('pageSub'); if (sub) sub.textContent = view.subtitle || today();
     $('main').innerHTML = '<div class="panel panel-pad muted" style="margin-top:12px">Carregando…</div>';
     window.scrollTo(0, 0);
     await runView(view, {});
@@ -68,6 +74,7 @@
   // ---------- tema ----------
   const effectiveDark = () => { const t = document.documentElement.getAttribute('data-theme'); return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
   function paintTools() {
+    document.querySelectorAll('[data-ico]').forEach(e => { if (!e.firstChild) e.innerHTML = icon(e.dataset.ico === 'hard-pulse' ? 'sistemas' : e.dataset.ico).s; });
     const dark = effectiveDark();
     document.querySelectorAll('[data-act=theme]').forEach(b => { b.innerHTML = icon(dark ? 'sun' : 'moon').s; b.title = dark ? 'Mudar para o tema claro' : 'Mudar para o tema escuro'; });
     document.querySelectorAll('[data-act=logout]').forEach(b => { b.innerHTML = icon('logout').s; });
@@ -80,7 +87,7 @@
   function enter(user) {
     App.user = user; $('login').hidden = true; $('app').hidden = false;
     document.body.classList.toggle('readonly', user.role !== 'admin');
-    $('who').innerHTML = html`<b>${user.name}</b><span>${user.role === 'admin' ? user.email : 'Só visualiza • ' + user.email}</span>`.s;
+    $('who').innerHTML = html`<span class="avatar" aria-hidden="true">${initials(user.name)}</span><span class="who-txt"><b>${user.name}</b><span>${user.role === 'admin' ? user.email : 'Só visualiza • ' + user.email}</span></span>`.s;
     buildNav(); paintTools(); startStream(); if (App.safira) App.safira.start();
     const tab = (location.hash.match(/^#\/(\w+)/) || [])[1]; show(App.views[tab] ? tab : 'painel');
   }

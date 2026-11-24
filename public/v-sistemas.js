@@ -6,7 +6,7 @@
   let data = null;
 
   const card = s => html`<section class="panel sys-card">
-    <span class="swatch" style="background:${App.sysColor(s.kind)};height:48px"></span>
+    ${App.sysTile(s.kind, 'lg')}
     <div style="min-width:0"><div class="row" style="gap:10px"><h3>${s.name}</h3>${App.sysBadge(s.status)}</div>
       <div class="meta">${s.kind_label} • ${s.base_url}</div>
       <div class="small muted" style="margin-top:4px">${F.int(s.clients)} ${s.client_word}${s.clients === 1 ? '' : 's'} • ${s.status === 'offline' ? html`<span style="color:var(--bad)">${s.last_error || 'sem resposta'}</span>` : s.last_ok_at ? 'última resposta ' + F.ago(s.last_ok_at) + (s.latency_ms ? ' (' + s.latency_ms + ' ms)' : '') : 'ainda sem leitura'}</div></div>
